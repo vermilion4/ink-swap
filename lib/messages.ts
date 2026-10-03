@@ -29,6 +29,9 @@ export type Message =
       width: number;
       height: number;
     }
+  // popup → background: how many pages are saved / forget them all (answers with the count)
+  | { type: 'savedCount' }
+  | { type: 'clearSaved' }
   // page helper / popup → background: the system is in dark (or light) mode, for the toolbar icon
   | { type: 'colorScheme'; dark: boolean }
   // background → offscreen page: play the chime

@@ -39,7 +39,7 @@ In the demo, the learner opens a **real manga website** showing a raw Japanese c
 - Proven reliability across many different manga sites and layouts.
 - Polished typesetting: manga-style fonts, curved text, matching the text style of each bubble.
 - Translating sound effects and text outside bubbles.
-- Caching translations so re-reading a chapter is instant and free.
+- ~~Caching translations so re-reading a chapter is instant and free.~~ Moved into the PoC at the final review (learner decision, 2026-10-03): saved translations per browser, with a clear button. See `prd.md > Saved Translations`.
 - Source languages beyond Japanese, such as Korean webtoons and Chinese manhua.
 - Fully polished settings UI with the dark, Crunchyroll-inspired look.
 - More target languages beyond English, Spanish, and French.

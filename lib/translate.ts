@@ -14,6 +14,20 @@ export const MODEL = 'claude-sonnet-5-5';
 const EFFORT = 'medium';
 const TIMEOUT_MS = 60_000;
 
+/**
+ * Identifies what made a translation, for saved translations: the model, the translation prompt,
+ * and REQUEST_VERSION (bump it when the request text or the JSON format changes). Saved pages
+ * from another version don't count, so an improved prompt translates afresh.
+ */
+const REQUEST_VERSION = 'r1';
+export const TRANSLATION_VERSION = hashText(`${MODEL}|${REQUEST_VERSION}|${prompt('{language}')}`);
+
+function hashText(text: string): string {
+  let h = 0x811c9dc5; // FNV-1a
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193);
+  return (h >>> 0).toString(36);
+}
+
 const LANGUAGE_NAMES: Record<Language, string> = { en: 'English', es: 'Spanish', fr: 'French' };
 
 // Claude gives boxes in the image's own pixels (Sonnet 5.5's coordinates map 1:1 to pixels

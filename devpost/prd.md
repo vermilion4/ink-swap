@@ -88,7 +88,16 @@ Develops `scope.md > The Unique Kernel`.
 - [ ] Choosing retry runs that page again. On success, it shows translations like any other page.
 - [ ] A single bubble that can't be read stays raw, and the rest of the page still translates.
 
-## States and Boundaries
+### Saved Translations
+Added at the final review (learner decision): leaving a translated chapter and coming back shouldn't cost the reader again.
+- [ ] A page already translated in this browser, into the same language, shows its translations again **instantly, without a new translation** (and without spending credits): after leaving and coming back, a reload, or a browser restart.
+- [ ] If the internet drops while the manga page is still open, pages already translated still show their translations. (The manga site itself needs the internet to show its pages, so a chapter can't be opened from scratch offline.)
+- [ ] A different target language is translated fresh, then saved too.
+- [ ] Saved translations are remembered between browsing sessions. The most recently used ~2,000 pages are kept; older ones are dropped.
+- [ ] The popup has a **Clear saved translations** button, showing how many pages are saved. After clearing, pages translate fresh again.
+- [ ] Only translations are saved, never the manga pages themselves.
+
+
 - **Off (default)**: the manga site looks exactly as normal.
 - **On, translating**: loading indicators on the bubbles of pages in view.
 - **On, translated**: translated bubbles, plus a chime and toast on the first page and one toast per chapter after that.
@@ -119,12 +128,12 @@ Develops `scope.md > The Unique Kernel`.
 - First-page chime, then one toast per chapter
 - Failure handling: raw page, toast, and retry
 - Retranslating the current chapter on a language change
+- Saved translations: pages already translated in this browser come back instantly without a new translation, and a popup button clears them
 - Tested and demoed on one or two real raw manga sites
 
 ## Deferred From the POC
 - **Waiting-room entertainment** (a Chrome-style mini-game, or jokes and comedic panels): it's a separate project, and it doesn't help prove translation works.
 - **Proven support across many manga sites**: we're testing on one or two first (`scope.md > Later`).
-- **Translation caching**, so re-reading is instant and free.
 
 ## Possible Later Enhancements
 - Polished typesetting: curved text, and matching each bubble's original lettering style.

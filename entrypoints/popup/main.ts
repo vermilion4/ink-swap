@@ -17,6 +17,14 @@ const toasts = $<HTMLInputElement>('#toasts');
 const keyInput = $<HTMLInputElement>('#key');
 const saveBtn = $<HTMLButtonElement>('#save');
 const saved = $<HTMLParagraphElement>('#saved');
+const savedCount = $<HTMLElement>('#saved-count');
+const clearSaved = $<HTMLButtonElement>('#clear-saved');
+
+function renderSavedCount(count: number) {
+  savedCount.textContent =
+    count === 0 ? 'None yet. Pages you translate come back free' : `${count} ${count === 1 ? 'page' : 'pages'} saved, free to reread`;
+  clearSaved.disabled = count === 0;
+}
 
 const READER_SITES = ['https://mangadex.org/', 'https://shonenjumpplus.com/'];
 let tabId: number | null = null;
@@ -69,6 +77,7 @@ async function init() {
   for (const input of languages) input.checked = input.value === language;
   opacity.value = String(prefs.opacity);
   renderOpacity(prefs.opacity);
+  renderSavedCount((await browser.runtime.sendMessage({ type: 'savedCount' } satisfies Message)) as number);
   chime.checked = prefs.chime;
   toasts.checked = prefs.toasts;
   renderPower();
@@ -98,6 +107,10 @@ opacity.addEventListener('input', () => {
 
 chime.addEventListener('change', () => void setPrefs({ chime: chime.checked }));
 toasts.addEventListener('change', () => void setPrefs({ toasts: toasts.checked }));
+
+clearSaved.addEventListener('click', async () => {
+  renderSavedCount((await browser.runtime.sendMessage({ type: 'clearSaved' } satisfies Message)) as number);
+});
 
 saveBtn.addEventListener('click', async () => {
   await setApiKey(keyInput.value);

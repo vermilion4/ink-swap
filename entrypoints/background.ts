@@ -1,10 +1,12 @@
 import { browser } from 'wxt/browser';
 import type { Celebrate, DataUrlResponse, Message, TranslateResponse } from '@/lib/messages';
 import { splitRegion } from '@/lib/bubbles';
+import { createCache } from '@/lib/cache';
+import { pageFingerprint } from '@/lib/fingerprint';
 import { createLimiter } from '@/lib/limit';
 import { detectBubbles, loadBitmap, regionShape, squareImage, type PageBubbles } from '@/lib/pageimage';
 import { getApiKey, getPrefs, getTabState, setPrefs, setTabState, type Language, type TabState } from '@/lib/settings';
-import { translatePage, TranslateError, type Bubble, type ReadBubble } from '@/lib/translate';
+import { TRANSLATION_VERSION, translatePage, TranslateError, type Bubble, type ReadBubble } from '@/lib/translate';
 
 // The last few captured pages and translations, kept for inspection while developing.
 const recentCaptures: { pageId: string; method: string; dataUrl: string; at: number }[] = [];
@@ -13,6 +15,7 @@ const recentTranslations: {
   ok: boolean;
   language?: string;
   placed?: number;
+  cached?: boolean;
   bubbles?: ReadBubble[];
   found?: number;
   marked?: string | null;
@@ -30,6 +33,17 @@ const limiterFor = (tabId: number) => {
 };
 
 const calls = new Map<number, number>(); // Claude calls made per tab, for checking while developing
+const cacheHits = new Map<number, number>(); // pages served from saved translations, per tab
+
+// Saved translations, in chrome.storage.local (with the unlimitedStorage permission).
+const cache = createCache(
+  {
+    get: (keys) => browser.storage.local.get(keys),
+    set: (items) => browser.storage.local.set(items),
+    remove: (keys) => browser.storage.local.remove(keys),
+  },
+  TRANSLATION_VERSION,
+);
 let chimes = 0; // chimes played, for checking while developing
 
 const MENU_ID = 'inkswap-translate';
@@ -40,6 +54,7 @@ const READER_PAGES = ['https://mangadex.org/*', 'https://shonenjumpplus.com/*'];
   recentTranslations,
   peakCalls: (tabId: number) => limiters.get(tabId)?.peak ?? 0,
   callsFor: (tabId: number) => calls.get(tabId) ?? 0,
+  cacheHitsFor: (tabId: number) => cacheHits.get(tabId) ?? 0,
   chimes: () => chimes,
   // The right-click menu's action, callable from the test script (Chrome menus can't be clicked from it).
   menuClick: (tabId: number) => switchTab(tabId, true),
@@ -82,6 +97,14 @@ export default defineBackground(() => {
         getTabState(msg.tabId).then(sendResponse);
         return true;
 
+      case 'savedCount':
+        cache.count().then(sendResponse);
+        return true;
+
+      case 'clearSaved':
+        cache.clear().then(() => sendResponse(0));
+        return true;
+
       case 'colorScheme':
         void setToolbarIcon(msg.dark);
         return false;
@@ -110,7 +133,6 @@ export default defineBackground(() => {
           .run(async (): Promise<TranslateResponse> => {
             // Switched off while this page waited its turn: don't spend a call on it.
             if (!(await getTabState(tabId))?.on) return { ok: false, kind: 'cancelled', error: 'Tab switched off' };
-            calls.set(tabId, (calls.get(tabId) ?? 0) + 1);
             const res = await translate(tabId, msg.pageId, msg.dataUrl, msg.width, msg.height);
             // A page with no bubbles (splash page, credits) is left alone: no chime or toast.
             if (res.ok && res.bubbles.length) res.celebrate = await celebrate(tabId, msg.chapter);
@@ -135,6 +157,15 @@ async function translate(
   try {
     const bmp = await loadBitmap(dataUrl);
     const found = detectBubbles(bmp);
+    // A page already translated into this language comes back from the save, free and instant.
+    const fp = pageFingerprint(found.gray);
+    const saved = await cache.lookup(fp, language).catch(() => null);
+    if (saved) {
+      cacheHits.set(tabId, (cacheHits.get(tabId) ?? 0) + 1);
+      remember(recentTranslations, { pageId, ok: true, language, placed: saved.length, cached: true });
+      return { ok: true, bubbles: saved, celebrate: null };
+    }
+    calls.set(tabId, (calls.get(tabId) ?? 0) + 1);
     const size = Math.max(bmp.width, bmp.height);
     const asImage = (url: string) => ({
       base64: url.slice(url.indexOf(',') + 1),
@@ -151,6 +182,9 @@ async function translate(
       await getApiKey(),
     );
     const bubbles = await placeBubbles(result.bubbles, found);
+    // Remember it, unless Claude read text but gave no translation for it (a failure worth retrying).
+    const gaveUp = result.bubbles.some((b) => b.readable && !b.inTargetLanguage && !b.translation.trim());
+    if (!gaveUp) await cache.save(fp, language, bubbles).catch((e) => console.warn('[InkSwap] could not save translation', e));
     remember(recentTranslations, { pageId, ok: true, language, placed: bubbles.length, ...result, found: found.regions.length, marked: marked && `data:image/jpeg;base64,${marked.base64}` });
     console.log(`[InkSwap] ${pageId}: ${result.bubbles.length} lines, ${found.regions.length} bubbles found, ${result.ms}ms, tokens`, result.usage);
     return { ok: true, bubbles, celebrate: null };

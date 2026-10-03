@@ -19,6 +19,7 @@ It's a proof of concept, built for the Devpost hackathon *Build With AI: Basics*
 - **Leaves some text alone:** bubbles already in your language, bubbles it can't read clearly, and sound effects.
 - **Works per tab and stays on across chapters.** Turn it on from the popup or by right-clicking the page and choosing **Translate this page**.
 - **Shows what's happening.** Pages show a spinner while they translate. The first translated page plays a chime with a "Page translated" toast, and each later chapter gets one "Chapter translated" toast. If a page fails, it stays as it was, with a **↻ Retry** button.
+- **Remembers what it has translated.** Pages you've already translated in this browser come back instantly and free when you return, reload or restart Chrome. If your connection drops while a chapter is open, those pages still show their translations. Only the translations are saved, never the manga pages, and **Clear saved translations** in the popup forgets them.
 - **Lets you set it up your way.** Choose English, Spanish or French, set how opaque the bubbles are (this updates live), and switch the chime and toasts on or off.
 
 ## Try it
@@ -39,7 +40,7 @@ To translate into Spanish or French, pick the language in the popup. The chapter
 
 ### Your key and what it costs
 
-InkSwap uses **your own** Claude API key, and you pay Anthropic for what you translate. In testing, a page cost about **1–3¢** and took **5–10 seconds**. Full-resolution MangaDex pages are at the higher end, so a 40-page chapter costs roughly 40¢–$1.20. InkSwap sends at most 2 pages at a time per tab, and it only translates in tabs you've switched on.
+InkSwap uses **your own** Claude API key, and you pay Anthropic for what you translate. In testing, a page cost about **1–3¢** and took **5–10 seconds**. Full-resolution MangaDex pages are at the higher end, so a 40-page chapter costs roughly 40¢–$1.20. InkSwap sends at most 2 pages at a time per tab, only translates in tabs you've switched on, and rereading a page you've already translated (in the same language) costs nothing.
 
 Your key is stored only in this browser (`chrome.storage.local`), and only InkSwap's background worker reads it. Page images go to Anthropic's API to be translated; InkSwap doesn't store or share them anywhere else.
 
@@ -48,7 +49,7 @@ Your key is stored only in this browser (`chrome.storage.local`), and only InkSw
 - It has only been tested on MangaDex and Shonen Jump+. Other sites may not be detected.
 - Narration that floats on the artwork, outside any bubble, uses Claude's own estimate of where the text is, which can be slightly off. Text inside speech bubbles and caption boxes is placed exactly.
 - Shonen Jump+ protects its page images, so InkSwap translates what's on screen. It can't translate pages ahead of where you are.
-- Nothing is cached: re-reading a page translates it again.
+- Saved translations need the manga page itself to load, so you can't open a chapter from scratch with no internet. They keep the most recently read ~2,000 pages.
 
 ## How it works
 
@@ -62,6 +63,7 @@ popup ──switch on──▶ background worker ◀──page picture── pag
 - `entrypoints/content/` is the page helper. It finds manga pages, captures each page's picture (read directly, or a screenshot crop when the site blocks that), and draws the overlay.
 - `entrypoints/background.ts` is the background worker. It tracks which tabs are on, runs the right-click menu, limits Claude calls per tab, and decides when to chime and show toasts.
 - `lib/bubbles.ts` finds bubbles: each bubble's inside is a closed white shape with the letters as holes in it.
+- `lib/fingerprint.ts` and `lib/cache.ts` recognise a page you've already translated and keep its translation.
 - `lib/translate.ts` makes the Claude call and checks the JSON that comes back. `lib/prompt.ts` is the translation prompt.
 - `lib/overlay.ts` and `assets/overlay.css` draw the labels, the spinner, the toasts, and the Retry pill.
 - `entrypoints/popup/` is the popup. `entrypoints/offscreen/` is a hidden page that plays the chime.
@@ -72,7 +74,7 @@ Built with [WXT](https://wxt.dev), TypeScript, the [Anthropic TypeScript SDK](ht
 
 ```sh
 npm run dev      # opens Chrome with InkSwap loaded; reloads as you edit
-npm test         # unit tests (box math, text fitting, bubble finding, the call limiter)
+npm test         # unit tests (box math, text fitting, bubble finding, the call limiter, page fingerprints, saved translations)
 npm run compile  # type check
 node scripts/render-icons.mjs  # re-render public/icon*/ PNGs from assets/icon*.svg
 ```
@@ -86,6 +88,9 @@ PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS=1 \
   node --env-file=.env scripts/check-feedback.mjs                       # chime, toasts, failures and Retry
 node --env-file=.env scripts/check-settings.mjs                         # popup, opacity, Spanish, settings after a restart
 node --env-file=.env scripts/check-sjplus.mjs                           # the journey on Shonen Jump+
+node --env-file=.env scripts/check-longstrip.mjs                        # MangaDex long-strip, Spanish → English, leaving the tab
+PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS=1 \
+  node --env-file=.env scripts/check-saved.mjs                          # saved translations: reload, offline, restart, Clear
 node --env-file=.env scripts/make-readme-shot.mjs --page <page.png> --credit "<title / author>"
                                                                         # re-make docs/translation-before-after.png
 ```

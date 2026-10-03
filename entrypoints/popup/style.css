@@ -402,6 +402,26 @@ input[type='range']:active::-webkit-slider-thumb {
   color: #1d1a22;
 }
 
+/* Saved translations: a small inked button that empties them. */
+.saved-row {
+  cursor: default;
+}
+.clear {
+  flex: none;
+  padding: 6px 14px;
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--text);
+  font: 400 17px/1 'Bangers', system-ui, sans-serif;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+.clear:disabled {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
+}
+
 /* API key */
 .key {
   display: grid;

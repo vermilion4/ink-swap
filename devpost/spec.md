@@ -94,6 +94,7 @@ It contains:
 - The **Opacity** slider: 0.5–1.0, default 0.95
 - **Chime** and **Toasts** switches
 - A **Claude API key** field, masked, with a "Saved ✓" confirmation
+- A **Clear saved translations** button showing how many pages are saved
 
 With no key saved, the toggle is disabled and shows the hint "Paste your Claude API key to start."
 
@@ -152,7 +153,15 @@ Draws InkSwap's on-page layer inside a **shadow root**, a sealed-off area so the
 
 PRD refs: `prd.md > Bubble Translation and Overlay`, `prd.md > Loading Feedback`, `prd.md > When Translation Fails`, `prd.md > Settings`.
 
-### Toasts
+### Translation Cache
+Added at the final review (`prd.md > Saved Translations`). Lives in `lib/fingerprint.ts` (pure, unit-tested) and `lib/cache.ts`, used by the background worker.
+- **Fingerprint:** the captured page is shrunk to a small grayscale grid and turned into a 256-bit difference hash, plus the page's shape (width/height). The same page captured again (a new MangaDex address, a re-taken Shonen Jump+ screenshot) gives the same or a nearly identical fingerprint; different pages differ in many bits.
+- **Lookup:** before calling Claude, the background worker looks for a saved page with a nearly identical fingerprint (a few differing bits at most), the same target language, and the same version (a hash of the translation prompt and model, so improving the prompt translates fresh). A hit returns the saved bubbles at once.
+- **Save:** after a successful translation, unless Claude read text but returned no translation for it (the "returned nothing" failure, which shouldn't be remembered).
+- **Limit:** most recently used ~2,000 pages; the oldest are dropped. `unlimitedStorage` lets this exceed Chrome's default 10 MB.
+- **Clear:** the popup's "Clear saved translations" button, which shows how many pages are saved.
+
+
 Pill toasts at the top center of the page, inside the shadow root. They disappear after about 3 seconds. The error toast has a **Retry** button. Toasts respect the "Toasts" setting.
 - **First page after switching on:** "Page translated ✓", plus the chime if enabled.
 - **First page of each later chapter:** "Chapter translated ✓", with no chime.
@@ -172,7 +181,8 @@ PRD ref: `prd.md > Changing Language Mid-Chapter`.
 | Settings: language, opacity, chime on/off, toasts on/off | `chrome.storage.local` (the extension's sticky note on your computer) | The popup writes it. Page helpers listen for changes and update live. | Remembered between sessions (per the PRD's assumption). |
 | Claude API key | `chrome.storage.local` | Pasted in the popup. Only the background worker reads it. | Remembered until you clear it. Never synced, never in code. |
 | Tab on/off state: `{ [tabId]: { on, language } }` | `chrome.storage.session` (kept while Chrome is open, survives the background worker restarting) | Toggle or right-click sets it. Closing the tab clears it. | It lasts as long as the tab and survives chapter changes in that tab. Closing Chrome clears it. |
-| Page status and bubbles: `{pageId → status, bubbles, language}` | In memory in the page helper | Set as pages translate. | Gone on a full page reload. Nothing is cached (caching is deferred). |
+| Page status and bubbles: `{pageId → status, bubbles, language}` | In memory in the page helper | Set as pages translate. | Gone on a full page reload; the Translation Cache brings saved pages back. |
+| Saved translations: `{ fingerprint, language, version, bubbles (with shapes), lastUsed }` per page, plus a small index | `chrome.storage.local` (`unlimitedStorage`), read and written only by the background worker | Saved after each successful translation; looked up before every Claude call; "Clear saved translations" empties it. | Remembered between sessions. Most recently used ~2,000 pages kept. No page images are stored. |
 | Chime and toast flags: `chimed` (per tab), `toastedChapters` (set of chapter URLs) | `chimed` with the tab state; `toastedChapters` in page-helper memory | Set once each fires. | Reset when the tab is switched off and on again. |
 
 **Bubble shape** (what Claude returns, enforced by zod):
@@ -282,7 +292,7 @@ Shantell Sans and Bangers, from Google Fonts, under the SIL Open Font License. T
 - **One Claude call per page** instead of separate text-recognition and translation services. It's cheaper to build, has one failure point, and gives better context for meaning-first translation.
 - **Rounded white labels** instead of true bubble-shaped typesetting. Curved text and matching each bubble's style are deferred (`prd.md > Possible Later Enhancements`).
 - **Screenshot fallback** instead of reverse-engineering each site's image scrambling. It works anywhere, at the cost of no translating ahead on those sites.
-- **No caching:** leaving and coming back retranslates. This is deferred per the PRD.
+- **Saved translations keyed by a page fingerprint** instead of by page address: MangaDex page addresses change on every load and Shonen Jump+ is captured by screenshot, so a small perceptual fingerprint of the picture identifies the page. Only translations are stored, never pages.
 - **A synthesized chime** (Web Audio) instead of a sound file, so there's no audio asset to source or license.
 
 ## Decisions and Open Issues
