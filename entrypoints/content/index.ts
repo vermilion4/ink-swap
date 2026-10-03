@@ -14,6 +14,14 @@ import type { TranslateFailure } from '@/lib/translate';
 export default defineContentScript({
   matches: ['https://mangadex.org/*', 'https://shonenjumpplus.com/*'],
   async main() {
+    // The background worker may add this page helper itself (to tabs open before InkSwap was
+    // installed or reloaded). If a working copy is already running here, let it be.
+    const w = window as unknown as { __inkswap?: { alive: () => boolean } };
+    if (w.__inkswap?.alive()) return;
+    w.__inkswap = { alive: () => { try { return !!browser.runtime?.id; } catch { return false; } } };
+    // A copy from before InkSwap was reloaded can't reach the extension any more: clear its layer.
+    document.querySelectorAll('inkswap-overlay').forEach((el) => el.remove());
+
     const overlay = createOverlay();
     const toaster = createToaster(overlay.toastLayer);
     const done = new Set<string>(); // pages captured (or in progress)

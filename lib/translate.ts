@@ -116,7 +116,7 @@ export async function translatePage(
           content: [
             image(clean),
             ...(marked ? [image(marked)] : []),
-            { type: 'text', text: `${howToRead}\nTarget language: ${languageName}. A bubble already written in ${languageName} needs no translation: mark it as already in the target language and leave its translation empty.` },
+            { type: 'text', text: `${howToRead}\nTarget language: ${languageName}. A bubble already written in ${languageName} needs no translation: mark it as already in the target language and leave its translation empty. The page can be in any language (Japanese, Spanish, Indonesian, …): translate every bubble that isn't already in ${languageName}.` },
           ],
         },
       ],

@@ -3,7 +3,7 @@ import type { Celebrate, DataUrlResponse, Message, TranslateResponse } from '@/l
 import { splitRegion } from '@/lib/bubbles';
 import { createLimiter } from '@/lib/limit';
 import { detectBubbles, loadBitmap, regionShape, squareImage, type PageBubbles } from '@/lib/pageimage';
-import { getApiKey, getPrefs, getTabState, setPrefs, setTabState, type Language } from '@/lib/settings';
+import { getApiKey, getPrefs, getTabState, setPrefs, setTabState, type Language, type TabState } from '@/lib/settings';
 import { translatePage, TranslateError, type Bubble, type ReadBubble } from '@/lib/translate';
 
 // The last few captured pages and translations, kept for inspection while developing.
@@ -12,6 +12,7 @@ const recentTranslations: {
   pageId: string;
   ok: boolean;
   language?: string;
+  placed?: number;
   bubbles?: ReadBubble[];
   found?: number;
   marked?: string | null;
@@ -45,7 +46,7 @@ const READER_PAGES = ['https://mangadex.org/*', 'https://shonenjumpplus.com/*'];
 };
 const remember = <T>(list: T[], item: T) => {
   list.push(item);
-  if (list.length > 6) list.shift();
+  if (list.length > 20) list.shift();
 };
 
 export default defineBackground(() => {
@@ -150,7 +151,7 @@ async function translate(
       await getApiKey(),
     );
     const bubbles = await placeBubbles(result.bubbles, found);
-    remember(recentTranslations, { pageId, ok: true, language, ...result, found: found.regions.length, marked: marked && `data:image/jpeg;base64,${marked.base64}` });
+    remember(recentTranslations, { pageId, ok: true, language, placed: bubbles.length, ...result, found: found.regions.length, marked: marked && `data:image/jpeg;base64,${marked.base64}` });
     console.log(`[InkSwap] ${pageId}: ${result.bubbles.length} lines, ${found.regions.length} bubbles found, ${result.ms}ms, tokens`, result.usage);
     return { ok: true, bubbles, celebrate: null };
   } catch (e) {
@@ -263,8 +264,24 @@ async function setLanguage(tabId: number | null, language: Language) {
   if (!prev?.on || prev.language === language) return prev;
   const state = { ...prev, language };
   await setTabState(tabId, state);
-  await browser.tabs.sendMessage(tabId, { type: 'tabStateChanged', state } satisfies Message).catch(() => {});
+  await tellTab(tabId, state);
   return state;
+}
+
+/**
+ * Tell a tab's page helper its new state. Chrome doesn't add page helpers to tabs that were
+ * already open when InkSwap was installed, reloaded or updated, so if nobody answers and the
+ * tab is being switched on, add the page helper now; it reads its state as it starts.
+ */
+async function tellTab(tabId: number, state: TabState | null) {
+  try {
+    await browser.tabs.sendMessage(tabId, { type: 'tabStateChanged', state } satisfies Message);
+  } catch {
+    if (!state?.on) return;
+    await browser.scripting
+      .executeScript({ target: { tabId }, files: ['/content-scripts/content.js'] })
+      .catch((e) => console.warn('[InkSwap] could not add the page helper to tab', tabId, e));
+  }
 }
 
 /**
@@ -288,7 +305,7 @@ async function switchTab(tabId: number, on: boolean) {
   const fresh = { on: true, language: (await getPrefs()).language };
   const state = on ? (prev?.on ? prev : fresh) : null;
   await setTabState(tabId, state);
-  await browser.tabs.sendMessage(tabId, { type: 'tabStateChanged', state } satisfies Message).catch(() => {});
+  await tellTab(tabId, state);
   return state;
 }
 

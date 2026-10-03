@@ -40,14 +40,17 @@ export function findBubbles(img: Gray): Region[] {
     if (label[start] || data[start]! <= WHITE) continue;
     const id = next++;
     label[start] = id;
-    let head = 0, tail = 0, count = 0, edge = false;
+    let head = 0, tail = 0, count = 0, edges = 0; // which image edges it touches (bit flags)
     let minX = width, maxX = 0, minY = height, maxY = 0;
     queue[tail++] = start;
     while (head < tail) {
       const p = queue[head++]!;
       const x = p % width, y = (p - x) / width;
       count++;
-      if (x === 0 || y === 0 || x === width - 1 || y === height - 1) edge = true;
+      if (x === 0) edges |= 1;
+      if (y === 0) edges |= 2;
+      if (x === width - 1) edges |= 4;
+      if (y === height - 1) edges |= 8;
       if (x < minX) minX = x;
       if (x > maxX) maxX = x;
       if (y < minY) minY = y;
@@ -63,8 +66,9 @@ export function findBubbles(img: Gray): Region[] {
       queue[tail++] = q;
     }
 
-    // An area touching the page edge is open background, not a closed bubble.
-    if (edge) continue;
+    // An area touching two or more image edges is open background, not a closed bubble. One
+    // edge is allowed: in long-strip readers a bubble can run off the top or bottom of its page.
+    if (edges & (edges - 1)) continue;
     const w = maxX - minX + 1, h = maxY - minY + 1;
     const pageArea = width * height;
     if (w < MIN_SIDE || h < MIN_SIDE) continue;

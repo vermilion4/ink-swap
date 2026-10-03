@@ -42,6 +42,15 @@ describe('findBubbles', () => {
     expect(b!.mask[0]).toBe(0); // the bounding box corner is outside the ellipse
   });
 
+  it('finds a bubble cut off by the top edge of the page image (long-strip readers)', () => {
+    const img = page(300, 300);
+    bubble(img, 150, 20, 60, 70); // runs past the top of the image
+    const found = findBubbles(img);
+    expect(found).toHaveLength(1);
+    expect(found[0]!.y).toBe(0);
+    expect(found[0]!.w).toBeGreaterThan(110);
+  });
+
   it('ignores open white background touching the page edge', () => {
     expect(findBubbles(page(200, 200, 255))).toHaveLength(0);
   });

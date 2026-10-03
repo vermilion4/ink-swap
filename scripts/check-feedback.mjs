@@ -75,9 +75,23 @@ check('second page: no new toast', shown.length === 1, JSON.stringify(shown));
 check('second page: no new chime', (await bg(() => globalThis.__inkswap.chimes())) === 1);
 
 // 3. Later chapters (a new series in the same tab, then the next chapter without a reload).
+// Watch for toasts from the very start of the new page: its first page can translate quickly.
+await page.addInitScript(() => {
+  window.__toasts = [];
+  const attach = () => {
+    const root = document.querySelector('inkswap-overlay')?.shadowRoot;
+    if (!root) return setTimeout(attach, 100);
+    new MutationObserver((records) => {
+      for (const r of records)
+        for (const n of r.addedNodes)
+          if (n.classList?.contains('toast'))
+            window.__toasts.push({ kind: n.classList.contains('error') ? 'error' : 'success', text: n.querySelector('.text').textContent, retry: !!n.querySelector('button') });
+    }).observe(root, { childList: true, subtree: true });
+  };
+  attach();
+});
 await page.goto(SHORT_CHAPTER, { waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(3000);
-await watchToasts(page);
 await settle(page);
 await page.keyboard.press('ArrowRight');
 await page.waitForTimeout(3000);
