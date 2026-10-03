@@ -45,7 +45,15 @@ export function createOverlay() {
   // Follow each page element every frame: some readers move pages with transforms,
   // which fire no scroll events.
   function follow() {
-    for (const layer of layers.values()) place(layer);
+    for (const [id, layer] of layers) {
+      // The reader removed this page (e.g. a new chapter loaded): drop its layer too.
+      if (!layer.el.isConnected) {
+        layer.box.remove();
+        layers.delete(id);
+        continue;
+      }
+      place(layer);
+    }
     frame = requestAnimationFrame(follow);
   }
 

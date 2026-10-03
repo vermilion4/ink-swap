@@ -25,4 +25,4 @@ export type DataUrlResponse = { ok: true; dataUrl: string } | { ok: false; error
 
 export type TranslateResponse =
   | { ok: true; bubbles: Bubble[] }
-  | { ok: false; kind: TranslateFailure; error: string };
+  | { ok: false; kind: TranslateFailure | 'cancelled'; error: string };

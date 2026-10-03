@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser';
 import type { DataUrlResponse, Message, TranslateResponse } from '@/lib/messages';
 import { splitRegion } from '@/lib/bubbles';
+import { createLimiter } from '@/lib/limit';
 import { detectBubbles, loadBitmap, regionShape, squareImage, type PageBubbles } from '@/lib/pageimage';
 import { getApiKey, getTabState, setTabState } from '@/lib/settings';
 import { translatePage, TranslateError, type Bubble, type ReadBubble } from '@/lib/translate';
@@ -17,7 +18,28 @@ const recentTranslations: {
   usage?: { input: number; output: number };
   ms?: number;
 }[] = [];
-(globalThis as any).__inkswap = { recentCaptures, recentTranslations };
+// At most 2 Claude calls in flight per tab; the rest wait their turn.
+const MAX_CALLS_PER_TAB = 2;
+const limiters = new Map<number, ReturnType<typeof createLimiter>>();
+const limiterFor = (tabId: number) => {
+  let l = limiters.get(tabId);
+  if (!l) limiters.set(tabId, (l = createLimiter(MAX_CALLS_PER_TAB)));
+  return l;
+};
+
+const calls = new Map<number, number>(); // Claude calls made per tab, for checking while developing
+
+const MENU_ID = 'inkswap-translate';
+const READER_PAGES = ['https://mangadex.org/*', 'https://shonenjumpplus.com/*'];
+
+(globalThis as any).__inkswap = {
+  recentCaptures,
+  recentTranslations,
+  peakCalls: (tabId: number) => limiters.get(tabId)?.peak ?? 0,
+  callsFor: (tabId: number) => calls.get(tabId) ?? 0,
+  // The right-click menu's action, callable from the test script (Chrome menus can't be clicked from it).
+  menuClick: (tabId: number) => switchTab(tabId, true),
+};
 const remember = <T>(list: T[], item: T) => {
   list.push(item);
   if (list.length > 6) list.shift();
@@ -26,6 +48,20 @@ const remember = <T>(list: T[], item: T) => {
 export default defineBackground(() => {
   browser.tabs.onRemoved.addListener((tabId) => {
     void setTabState(tabId, null);
+    limiters.delete(tabId);
+  });
+
+  // Right-click "Translate this page": the same as flipping the popup toggle on.
+  browser.runtime.onInstalled.addListener(() => {
+    browser.contextMenus.create({
+      id: MENU_ID,
+      title: 'Translate this page',
+      contexts: ['page', 'image'],
+      documentUrlPatterns: READER_PAGES,
+    });
+  });
+  browser.contextMenus.onClicked.addListener((info, tab) => {
+    if (info.menuItemId === MENU_ID && tab?.id != null) void switchTab(tab.id, true);
   });
 
   browser.runtime.onMessage.addListener((raw, sender, sendResponse) => {
@@ -58,7 +94,14 @@ export default defineBackground(() => {
       case 'translatePage':
         if (tabId == null) return false;
         remember(recentCaptures, { pageId: msg.pageId, method: msg.method, dataUrl: msg.dataUrl, at: Date.now() });
-        translate(tabId, msg.pageId, msg.dataUrl, msg.width, msg.height).then(sendResponse);
+        limiterFor(tabId)
+          .run(async (): Promise<TranslateResponse> => {
+            // Switched off while this page waited its turn: don't spend a call on it.
+            if (!(await getTabState(tabId))?.on) return { ok: false, kind: 'cancelled', error: 'Tab switched off' };
+            calls.set(tabId, (calls.get(tabId) ?? 0) + 1);
+            return translate(tabId, msg.pageId, msg.dataUrl, msg.width, msg.height);
+          })
+          .then(sendResponse);
         return true;
     }
     return false;

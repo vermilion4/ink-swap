@@ -15,11 +15,13 @@ const VISIBLE_RATIO = 0.6;
 export interface FinderOptions {
   /** A page is (mostly) in view. Called again if it leaves and comes back. */
   onVisible: (page: FoundPage) => void;
+  /** An <img> page is within a screen below the view, so it can be translated before the reader gets there. */
+  onNear?: (page: FoundPage) => void;
   /** An element now shows a different page (e.g. single-page readers swapping the image). */
   onReplaced?: (oldId: string, page: FoundPage) => void;
 }
 
-export function createFinder({ onVisible, onReplaced }: FinderOptions) {
+export function createFinder({ onVisible, onNear, onReplaced }: FinderOptions) {
   const pages = new Map<PageElement, FoundPage>();
   let counter = 0;
   let running = false;
@@ -37,6 +39,17 @@ export function createFinder({ onVisible, onReplaced }: FinderOptions) {
     { threshold: [0, VISIBLE_RATIO, 1] },
   );
 
+  // Pictures can be read without being on screen, so look one screen ahead for those.
+  const ahead = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        const page = pages.get(e.target as PageElement);
+        if (page && e.isIntersecting) onNear?.(page);
+      }
+    },
+    { rootMargin: '0px 0px 100% 0px' },
+  );
+
   // Single-page readers (MangaDex's default) reuse one <img> and swap its picture.
   const srcWatcher = new MutationObserver((records) => {
     for (const r of records) {
@@ -50,6 +63,8 @@ export function createFinder({ onVisible, onReplaced }: FinderOptions) {
       const recheck = () => {
         io.unobserve(el);
         io.observe(el);
+        ahead.unobserve(el);
+        ahead.observe(el);
       };
       if (el.complete) recheck();
       else el.addEventListener('load', recheck, { once: true });
@@ -63,11 +78,21 @@ export function createFinder({ onVisible, onReplaced }: FinderOptions) {
 
   function scan() {
     if (!running) return;
+    // Forget pages the reader removed (e.g. the previous chapter's).
+    for (const el of pages.keys()) {
+      if (el.isConnected) continue;
+      pages.delete(el);
+      io.unobserve(el);
+      ahead.unobserve(el);
+    }
     for (const el of document.querySelectorAll<PageElement>('img, canvas')) {
       if (pages.has(el) || !isPageSized(el)) continue;
       pages.set(el, { id: pageIdFor(el), el });
       io.observe(el);
-      if (el instanceof HTMLImageElement) srcWatcher.observe(el, { attributes: true, attributeFilter: ['src'] });
+      if (el instanceof HTMLImageElement) {
+        ahead.observe(el);
+        srcWatcher.observe(el, { attributes: true, attributeFilter: ['src'] });
+      }
     }
   }
 
@@ -95,6 +120,7 @@ export function createFinder({ onVisible, onReplaced }: FinderOptions) {
     stop() {
       running = false;
       io.disconnect();
+      ahead.disconnect();
       srcWatcher.disconnect();
       domWatcher.disconnect();
       clearInterval(interval);

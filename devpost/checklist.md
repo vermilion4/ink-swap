@@ -29,7 +29,7 @@ Build mode: fast
   Learner check: Open a raw chapter, switch on, and read the first page. Does each bubble read the way a fluent English speaker would say it? Do the labels sit cleanly on the bubbles, or does anything look pasted on?
   Commit: `Translate and overlay a manga page with Claude`
 
-- [ ] **3. Scroll through a whole chapter, and into the next one**
+- [x] **3. Scroll through a whole chapter, and into the next one**
   Becomes usable: Every page translates as it comes into view (pages just ahead may start early), with at most 2 Claude calls at once. Going to the next chapter in the same tab keeps translating without switching on again. Right-click "Translate this page" switches a tab on. Switching off stops new pages, and pages already translated keep their translations. Other tabs are unaffected.
   Why now: Once one page works, this turns it into the real reading experience from the core journey. Chapter-change detection on MangaDex (no full reload) is the next riskiest piece, so it comes before the polish.
   PRD ref: `prd.md > The Core Journey` (steps 2–3, 6), `prd.md > Switching On for a Tab`, `prd.md > Staying On Across Chapters`, `prd.md > Turning Off`
@@ -104,3 +104,6 @@ Activity mode:
 - Refusal fallback not turned on: for Sonnet 5.5 it only retries cyber and frontier-LLM declines, which manga translation won't hit. A refusal is a failed page with Retry.
 - Effort stays `medium`: `high` placed boxes no better in a side-by-side test.
 - Learner decisions at the slice 2 checkpoint: floating narration (text on the artwork, not in a bubble) uses Claude's rough box and may sit off its text; accepted as a known limit for the PoC. Chapter titles may be translated (keep as is).
+- Slice 3 check (`scripts/check-reading.mjs`, 11/11): whole 14-page MangaDex chapter translated with a peak of 2 calls in flight; turning past a chapter's last page (no reload) kept translating two more chapters; right-click action switches on and the popup reads "on"; switching off stops new calls; a second tab stayed untouched. The Playwright scripts now share `scripts/harness.mjs`.
+- Pages waiting for a call slot are dropped (no call, no error) if the tab is switched off before their turn. Pages the reader already turned past still get translated if they were queued; cancelling those is left for later (it only matters when flipping faster than Claude answers).
+- MangaDex's default reader shows one page at a time, so "labels already drawn stay" after switching off applies to the page on screen; turning to another page shows it raw.

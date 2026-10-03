@@ -1,6 +1,6 @@
 // Loads the built extension (.output/chrome-mv3) into Chromium, opens a manga chapter,
 // switches InkSwap on for that tab (through the same message the popup sends), scrolls or
-// turns pages, then saves screenshots and whatever pages InkSwap captured.
+// turns pages, then saves screenshots and whatever pages InkSwap captured and translated.
 //
 // Usage: node scripts/try-extension.mjs <chapter-url> [outDir] [--turn-left N] [--turn-right N] [--scroll N] [--off]
 //   --off        leave InkSwap off (to check nothing happens)
@@ -10,10 +10,9 @@
 // Set ANTHROPIC_API_KEY to store a key in the extension before switching on
 // (e.g. put it in a git-ignored .env and run with `node --env-file=.env ...`).
 
-import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
+import { launch, openPage, tabIdFor, waitIdle } from './harness.mjs';
 
 const args = process.argv.slice(2);
 const url = args[0];
@@ -25,37 +24,16 @@ const flag = (name, dflt = 0) => {
 const stayOff = args.includes('--off');
 fs.mkdirSync(outDir, { recursive: true });
 
-const extPath = path.resolve('.output/chrome-mv3');
-const context = await chromium.launchPersistentContext(fs.mkdtempSync(path.join(os.tmpdir(), 'inkswap-')), {
-  channel: 'chromium',
-  headless: !process.env.HEADED,
-  viewport: { width: 1280, height: 900 },
-  args: [`--disable-extensions-except=${extPath}`, `--load-extension=${extPath}`],
-});
+const { context, sw, asPopup } = await launch();
+const page = await openPage(context, url);
 
-let [sw] = context.serviceWorkers();
-sw ??= await context.waitForEvent('serviceworker');
-const extId = new URL(sw.url()).host;
-
-const page = await context.newPage();
-page.on('console', (m) => m.text().includes('InkSwap') && console.log('[page]', m.text()));
-await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
-await page.waitForTimeout(6000);
-
-// Use an extension page to talk to the background worker, like the popup does.
-const ctl = await context.newPage();
-await ctl.goto(`chrome-extension://${extId}/popup.html`);
-const tabId = await ctl.evaluate(async (u) => {
-  const tabs = await chrome.tabs.query({});
-  return tabs.find((t) => t.url?.startsWith(u.split('#')[0].slice(0, 30)))?.id;
-}, url);
+const tabId = await tabIdFor(asPopup, url);
 if (process.env.ANTHROPIC_API_KEY) {
-  await ctl.evaluate((k) => chrome.storage.local.set({ apiKey: k }), process.env.ANTHROPIC_API_KEY);
+  await asPopup((k) => chrome.storage.local.set({ apiKey: k }), process.env.ANTHROPIC_API_KEY);
 }
-if (!stayOff) await ctl.evaluate((id) => chrome.runtime.sendMessage({ type: 'setTabOn', tabId: id, on: true }), tabId);
-const popupState = await ctl.evaluate((id) => chrome.runtime.sendMessage({ type: 'getTabStateFor', tabId: id }), tabId);
+if (!stayOff) await asPopup((id) => chrome.runtime.sendMessage({ type: 'setTabOn', tabId: id, on: true }), tabId);
+const popupState = await asPopup((id) => chrome.runtime.sendMessage({ type: 'getTabStateFor', tabId: id }), tabId);
 console.log('tab', tabId, 'state as the popup sees it:', JSON.stringify(popupState));
-await ctl.close();
 await page.bringToFront();
 await page.waitForTimeout(4000);
 await page.screenshot({ path: path.join(outDir, 'view-0.png') });
@@ -73,23 +51,7 @@ for (let i = 1; i <= flag('--scroll'); i++) {
   await page.screenshot({ path: path.join(outDir, `view-${i}.png`) });
 }
 
-const readOverlay = () =>
-  page.evaluate(() => {
-    const host = document.querySelector('inkswap-overlay');
-    if (!host?.shadowRoot) return { mounted: false, pages: [], labels: 0 };
-    return {
-      mounted: true,
-      pages: [...host.shadowRoot.querySelectorAll('.page')].map((p) => p.dataset.status),
-      labels: host.shadowRoot.querySelectorAll('.label').length,
-    };
-  });
-
-// Wait (up to 2 minutes) for pages still being captured or translated.
-let overlay = await readOverlay();
-for (let t = 0; t < 120 && overlay.pages.some((s) => s === 'capturing' || s === 'translating'); t++) {
-  await page.waitForTimeout(1000);
-  overlay = await readOverlay();
-}
+const overlay = await waitIdle(page);
 console.log('overlay:', JSON.stringify(overlay));
 if (overlay.labels) await page.screenshot({ path: path.join(outDir, 'translated.png') });
 
