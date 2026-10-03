@@ -2,9 +2,10 @@
 // switches InkSwap on for that tab (through the same message the popup sends), scrolls or
 // turns pages, then saves screenshots and whatever pages InkSwap captured.
 //
-// Usage: node scripts/try-extension.mjs <chapter-url> [outDir] [--turn-left N] [--scroll N] [--off]
+// Usage: node scripts/try-extension.mjs <chapter-url> [outDir] [--turn-left N] [--turn-right N] [--scroll N] [--off]
 //   --off        leave InkSwap off (to check nothing happens)
 //   --turn-left  press ArrowLeft N times (paged right-to-left viewers like Shonen Jump+)
+//   --turn-right press ArrowRight N times (left-to-right single-page readers like MangaDex)
 //   --scroll     scroll down N screens (long-strip readers)
 // Set ANTHROPIC_API_KEY to store a key in the extension before switching on.
 
@@ -58,10 +59,12 @@ await page.bringToFront();
 await page.waitForTimeout(4000);
 await page.screenshot({ path: path.join(outDir, 'view-0.png') });
 
-for (let i = 1; i <= flag('--turn-left'); i++) {
-  await page.keyboard.press('ArrowLeft');
-  await page.waitForTimeout(4000);
-  await page.screenshot({ path: path.join(outDir, `view-${i}.png`) });
+for (const key of ['Left', 'Right']) {
+  for (let i = 1; i <= flag(`--turn-${key.toLowerCase()}`); i++) {
+    await page.keyboard.press(`Arrow${key}`);
+    await page.waitForTimeout(4000);
+    await page.screenshot({ path: path.join(outDir, `view-${i}.png`) });
+  }
 }
 for (let i = 1; i <= flag('--scroll'); i++) {
   await page.mouse.wheel(0, 850);

@@ -9,7 +9,7 @@ Build mode: fast
 
 ## Slices
 
-- [ ] **1. Switch InkSwap on for a tab and watch it find and capture the manga pages**
+- [x] **1. Switch InkSwap on for a tab and watch it find and capture the manga pages**
   Becomes usable: A loadable InkSwap extension. The popup has the "On for this tab" toggle and the API key field. On a raw MangaDex or Shonen Jump+ chapter, switching on makes InkSwap outline each manga page it finds as it scrolls into view, and save a captured picture of that page. Nothing is translated yet.
   Why now: This is the spec's "one useful unknown": can we get clean, unscrambled page pictures from these two sites? If we can't, everything after this changes, so we find out first. It also bootstraps the project (WXT, TypeScript, permissions) inside a real behavior rather than as a setup step.
   PRD ref: `prd.md > Switching On for a Tab`, `prd.md > States and Boundaries` (Off)
