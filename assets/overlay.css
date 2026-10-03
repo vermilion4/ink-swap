@@ -9,6 +9,9 @@
   --inkswap-accent-b: #b183f0;
   --inkswap-ink: #1d1a22;
   --inkswap-opacity: 0.95;
+  --inkswap-error: #ff5a6e;
+  --inkswap-toast-bg: #221e29;
+  --inkswap-toast-text: #efeaf3;
   position: fixed;
   inset: 0;
   pointer-events: none;
@@ -35,7 +38,28 @@
 }
 
 .page[data-status='failed'] {
-  box-shadow: 0 0 0 3px #ff5a6e;
+  box-shadow: none;
+}
+
+/* "↻ Retry" pill on a failed page's top-right corner. Uniform border, never one side. */
+.retry {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  pointer-events: auto;
+  cursor: pointer;
+  padding: 7px 14px;
+  border: 1.5px solid var(--inkswap-error);
+  border-radius: 999px;
+  background: var(--inkswap-toast-bg);
+  color: var(--inkswap-toast-text);
+  font: 600 13px/1 system-ui, sans-serif;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--inkswap-error) 25%, transparent), 0 4px 14px rgb(0 0 0 / 0.35);
+  transition: transform 0.15s ease;
+}
+
+.retry:hover {
+  transform: scale(1.05);
 }
 
 /* Gradient spinner over the page while Claude reads it. */
@@ -107,4 +131,91 @@
 .label > span > span {
   display: block;
   max-width: 100%;
+}
+
+/* Toasts: pills at the top center. Follow the system light/dark setting. */
+.toast-layer {
+  z-index: 2147483647;
+}
+
+.toasts {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 8px 8px;
+  border: 1.5px solid color-mix(in srgb, var(--inkswap-accent-b) 70%, transparent);
+  border-radius: 999px;
+  background: var(--inkswap-toast-bg);
+  color: var(--inkswap-toast-text);
+  font: 600 14px/1.2 system-ui, sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--inkswap-accent-a) 22%, transparent), 0 6px 22px rgb(0 0 0 / 0.35);
+  animation: inkswap-toast-in 0.25s ease-out;
+}
+
+.toast.error {
+  border-color: var(--inkswap-error);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--inkswap-error) 25%, transparent), 0 6px 22px rgb(0 0 0 / 0.35);
+}
+
+.toast.leaving {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.toast .badge {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--inkswap-accent-a), var(--inkswap-accent-b));
+  color: #fff;
+  font-size: 13px;
+}
+
+.toast.error .badge {
+  background: var(--inkswap-error);
+}
+
+.toast button {
+  pointer-events: auto;
+  cursor: pointer;
+  margin-left: 4px;
+  padding: 5px 12px;
+  border: 1.5px solid var(--inkswap-error);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+}
+
+@keyframes inkswap-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  .root {
+    --inkswap-accent-a: #c13fa8;
+    --inkswap-accent-b: #9b5de5;
+    --inkswap-toast-bg: #ffffff;
+    --inkswap-toast-text: #1d1a22;
+  }
 }

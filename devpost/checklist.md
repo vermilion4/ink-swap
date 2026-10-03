@@ -39,7 +39,7 @@ Build mode: fast
   Learner check: Right-click a raw chapter and choose "Translate this page." Scroll through it, go to the next chapter, keep scrolling, then switch off and scroll a little further. Translations should keep coming until you switch off, and the ones already there should stay.
   Commit: `Translate whole chapters as you scroll, across chapters in the tab`
 
-- [ ] **4. It tells you what's happening, and recovers when something fails**
+- [x] **4. It tells you what's happening, and recovers when something fails**
   Becomes usable: The first translated page plays a chime and shows "Page translated ✓". Each later chapter gets one "Chapter translated ✓" toast. A failed page stays raw with an error toast with Retry and a "↻ Retry" pill that re-runs it. A missing or bad key gets its own clear toast.
   Why now: Now that the full reading flow works, this adds the feedback and safety net around it. The reader is never left wondering, or stuck with a broken page.
   PRD ref: `prd.md > Loading Feedback`, `prd.md > When Translation Fails`, `prd.md > States and Boundaries`
@@ -107,3 +107,9 @@ Activity mode:
 - Slice 3 check (`scripts/check-reading.mjs`, 11/11): whole 14-page MangaDex chapter translated with a peak of 2 calls in flight; turning past a chapter's last page (no reload) kept translating two more chapters; right-click action switches on and the popup reads "on"; switching off stops new calls; a second tab stayed untouched. The Playwright scripts now share `scripts/harness.mjs`.
 - Pages waiting for a call slot are dropped (no call, no error) if the tab is switched off before their turn. Pages the reader already turned past still get translated if they were queued; cancelling those is left for later (it only matters when flipping faster than Claude answers).
 - MangaDex's default reader shows one page at a time, so "labels already drawn stay" after switching off applies to the page on screen; turning to another page shows it raw.
+- Slice 4 check (`scripts/check-feedback.mjs`, 14/14, run with `PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS=1` so Playwright can block the background worker's calls): first page → "Page translated" + one chime from the offscreen page; second page → nothing; each later chapter → one "Chapter translated"; Claude unreachable → raw page, error toast with Retry, "↻ Retry" pill; bad key and no key → their own toasts; pill retry with a good key translates.
+- The background worker decides the chime and toasts (it holds the tab state), so `toastedChapters` lives with the tab state in session storage rather than in page-helper memory — it survives Shonen Jump+'s full page reload between episodes.
+- The chime and toast switches are stored now (`prefs` in `chrome.storage.local`, both on by default) and respected; their popup controls come in slice 5.
+- Error toasts stay 6 s instead of 3 s, so their Retry button can be reached. On a page that starts at the top of the screen, the error toast briefly covers the "↻ Retry" pill; the toast has its own Retry.
+- The 60-second limit covers the whole call, the SDK's one retry included.
+- Learner request (during slice 4): bubbles already in the target language are left alone. The JSON has a new `inTargetLanguage` flag, decided before the text is written out; those bubbles get no label and keep their part of a shared shape so a neighbour's label can't cover them. Tested: an English MangaDex chapter page → 16 lines flagged, 0 labels; the Japanese test page unchanged (11 labels). Claude still has to see the page to know, so the call is still made; skipping the original text for those bubbles cut that page's output from 1,482 to 980 tokens.

@@ -29,9 +29,16 @@ export const BubbleSchema = z.object({
     .describe(
       "The whole speech bubble's outline (not just the text inside it), in pixels of the page image as given: x and y are the top-left corner, w and h the width and height.",
     ),
-  source: z.string().describe('The original text exactly as read in the bubble.'),
-  translation: z.string().describe('The translation. Empty if the bubble is unreadable.'),
+  // The "leave this bubble alone" decisions come before the text, so they're made first, and
+  // a bubble already in the target language costs almost nothing to report.
+  inTargetLanguage: z
+    .boolean()
+    .describe('True if the text is already written in the target language and needs no translation.'),
+  source: z.string().describe('The original text exactly as read in the bubble. Empty if already in the target language.'),
   readable: z.boolean().describe('False if the bubble could not be read with confidence.'),
+  translation: z
+    .string()
+    .describe('The translation. Empty if the bubble is unreadable or already in the target language.'),
 });
 export const BubbleListSchema = z.object({
   bubbles: z.array(BubbleSchema).describe('Every bubble on the page, in reading order.'),
@@ -109,12 +116,16 @@ export async function translatePage(
           content: [
             image(clean),
             ...(marked ? [image(marked)] : []),
-            { type: 'text', text: `${howToRead}\nTarget language: ${languageName}` },
+            { type: 'text', text: `${howToRead}\nTarget language: ${languageName}. A bubble already written in ${languageName} needs no translation: mark it as already in the target language and leave its translation empty.` },
           ],
         },
       ],
-    });
+    },
+    // About a minute in total, the SDK's one retry included; then the page counts as failed.
+    { signal: AbortSignal.timeout(TIMEOUT_MS) },
+    );
   } catch (e) {
+    if (e instanceof Anthropic.APIUserAbortError) throw new TranslateError('failed', 'Timed out after 60 s');
     if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) {
       throw new TranslateError('bad-key', e.message);
     }

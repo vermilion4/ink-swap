@@ -28,7 +28,10 @@ export function createOverlay() {
   style.textContent = overlayCss;
   const root = document.createElement('div');
   root.className = 'root';
-  shadow.append(style, root);
+  // Toasts sit outside `root`, so they stay visible while pages hide for a screenshot.
+  const toastLayer = document.createElement('div');
+  toastLayer.className = 'root toast-layer';
+  shadow.append(style, root, toastLayer);
 
   const layers = new Map<string, PageLayer>();
   let frame = 0;
@@ -80,8 +83,23 @@ export function createOverlay() {
       frame = 0;
       host.remove();
     },
+    toastLayer,
     setStatus(pageId: string, el: Element, status: PageStatus) {
-      layerFor(pageId, el).box.dataset.status = status;
+      const { box } = layerFor(pageId, el);
+      box.dataset.status = status;
+      if (status !== 'failed') box.querySelector('.retry')?.remove();
+    },
+    /** The page stays raw, with a "↻ Retry" pill in its top-right corner. */
+    setFailed(pageId: string, el: Element, onRetry: () => void) {
+      const { box } = layerFor(pageId, el);
+      box.replaceChildren();
+      box.dataset.status = 'failed';
+      const pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'retry';
+      pill.textContent = '↻ Retry';
+      pill.addEventListener('click', onRetry, { once: true });
+      box.append(pill);
     },
     /** Draw one label per readable bubble. Unreadable bubbles stay raw. */
     async setBubbles(pageId: string, el: Element, bubbles: Bubble[], lang: string) {

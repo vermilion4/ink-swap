@@ -7,6 +7,27 @@ export type Language = 'en' | 'es' | 'fr';
 export interface TabState {
   on: boolean;
   language: Language;
+  /** The chime (and "Page translated" toast) already fired since this tab was switched on. */
+  chimed?: boolean;
+  /** Chapters that already got their "Chapter translated" toast since switching on. */
+  toastedChapters?: string[];
+}
+
+/** Reader preferences, remembered between sessions. The popup edits them (slice 5). */
+export interface Prefs {
+  chime: boolean;
+  toasts: boolean;
+}
+const PREFS = 'prefs';
+const DEFAULT_PREFS: Prefs = { chime: true, toasts: true };
+
+export async function getPrefs(): Promise<Prefs> {
+  const res = await browser.storage.local.get(PREFS);
+  return { ...DEFAULT_PREFS, ...(res[PREFS] as Partial<Prefs> | undefined) };
+}
+
+export async function setPrefs(prefs: Partial<Prefs>): Promise<void> {
+  await browser.storage.local.set({ [PREFS]: { ...(await getPrefs()), ...prefs } });
 }
 
 const API_KEY = 'apiKey';

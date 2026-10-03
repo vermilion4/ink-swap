@@ -1,9 +1,9 @@
 import { browser } from 'wxt/browser';
-import type { DataUrlResponse, Message, TranslateResponse } from '@/lib/messages';
+import type { Celebrate, DataUrlResponse, Message, TranslateResponse } from '@/lib/messages';
 import { splitRegion } from '@/lib/bubbles';
 import { createLimiter } from '@/lib/limit';
 import { detectBubbles, loadBitmap, regionShape, squareImage, type PageBubbles } from '@/lib/pageimage';
-import { getApiKey, getTabState, setTabState } from '@/lib/settings';
+import { getApiKey, getPrefs, getTabState, setTabState } from '@/lib/settings';
 import { translatePage, TranslateError, type Bubble, type ReadBubble } from '@/lib/translate';
 
 // The last few captured pages and translations, kept for inspection while developing.
@@ -28,6 +28,7 @@ const limiterFor = (tabId: number) => {
 };
 
 const calls = new Map<number, number>(); // Claude calls made per tab, for checking while developing
+let chimes = 0; // chimes played, for checking while developing
 
 const MENU_ID = 'inkswap-translate';
 const READER_PAGES = ['https://mangadex.org/*', 'https://shonenjumpplus.com/*'];
@@ -37,6 +38,7 @@ const READER_PAGES = ['https://mangadex.org/*', 'https://shonenjumpplus.com/*'];
   recentTranslations,
   peakCalls: (tabId: number) => limiters.get(tabId)?.peak ?? 0,
   callsFor: (tabId: number) => calls.get(tabId) ?? 0,
+  chimes: () => chimes,
   // The right-click menu's action, callable from the test script (Chrome menus can't be clicked from it).
   menuClick: (tabId: number) => switchTab(tabId, true),
 };
@@ -99,7 +101,10 @@ export default defineBackground(() => {
             // Switched off while this page waited its turn: don't spend a call on it.
             if (!(await getTabState(tabId))?.on) return { ok: false, kind: 'cancelled', error: 'Tab switched off' };
             calls.set(tabId, (calls.get(tabId) ?? 0) + 1);
-            return translate(tabId, msg.pageId, msg.dataUrl, msg.width, msg.height);
+            const res = await translate(tabId, msg.pageId, msg.dataUrl, msg.width, msg.height);
+            // A page with no bubbles (splash page, credits) is left alone: no chime or toast.
+            if (res.ok && res.bubbles.length) res.celebrate = await celebrate(tabId, msg.chapter);
+            return res;
           })
           .then(sendResponse);
         return true;
@@ -138,7 +143,7 @@ async function translate(
     const bubbles = await placeBubbles(result.bubbles, found);
     remember(recentTranslations, { pageId, ok: true, ...result, found: found.regions.length, marked: marked && `data:image/jpeg;base64,${marked.base64}` });
     console.log(`[InkSwap] ${pageId}: ${result.bubbles.length} lines, ${found.regions.length} bubbles found, ${result.ms}ms, tokens`, result.usage);
-    return { ok: true, bubbles };
+    return { ok: true, bubbles, celebrate: null };
   } catch (e) {
     const err = e instanceof TranslateError ? e : new TranslateError('failed', String(e));
     remember(recentTranslations, { pageId, ok: false, error: `${err.kind}: ${err.message}` });
@@ -150,6 +155,49 @@ async function translate(
 }
 
 /**
+ * The first translated page after switching on gets the chime and "Page translated"; the first
+ * page of each later chapter gets "Chapter translated". Decided one page at a time, so two pages
+ * finishing together can't both chime.
+ */
+let celebrateChain: Promise<unknown> = Promise.resolve();
+function celebrate(tabId: number, chapter: string): Promise<Celebrate> {
+  const run = celebrateChain.then(async (): Promise<Celebrate> => {
+    const state = await getTabState(tabId);
+    if (!state?.on) return null;
+    const toasted = state.toastedChapters ?? [];
+    let kind: Celebrate = null;
+    if (!state.chimed) {
+      kind = 'page';
+      if ((await getPrefs()).chime) await playChime();
+    } else if (!toasted.includes(chapter)) {
+      kind = 'chapter';
+    }
+    if (kind) await setTabState(tabId, { ...state, chimed: true, toastedChapters: [...toasted, chapter] });
+    return kind;
+  });
+  celebrateChain = run.catch(() => {});
+  return run;
+}
+
+async function playChime() {
+  try {
+    const url = browser.runtime.getURL('/offscreen.html');
+    const open = await browser.runtime.getContexts({ contextTypes: ['OFFSCREEN_DOCUMENT'], documentUrls: [url] });
+    if (!open.length) {
+      await browser.offscreen.createDocument({
+        url,
+        reasons: ['AUDIO_PLAYBACK'],
+        justification: 'Play a short chime when the first manga page is translated.',
+      });
+    }
+    await browser.runtime.sendMessage({ type: 'playChime' } satisfies Message);
+    chimes++;
+  } catch (e) {
+    console.warn('[InkSwap] chime failed', e); // a missing chime never blocks the translation
+  }
+}
+
+/**
  * Lines Claude put in a found bubble take that bubble's exact box and shape (several lines in
  * one bubble are joined). Lines outside any found bubble keep Claude's own box.
  */
@@ -157,7 +205,9 @@ async function placeBubbles(read: ReadBubble[], found: PageBubbles): Promise<Bub
   const placed: Bubble[] = [];
   const byRegion = new Map<number, ReadBubble[]>();
   for (const b of read) {
-    if (b.bubble == null) placed.push({ box: b.box, source: b.source, translation: b.translation, readable: b.readable });
+    if (b.bubble == null) {
+      if (!b.inTargetLanguage) placed.push({ box: b.box, source: b.source, translation: b.translation, readable: b.readable });
+    }
     else byRegion.set(b.bubble, [...(byRegion.get(b.bubble) ?? []), b]);
   }
   const { width, height } = found.gray;
@@ -172,7 +222,9 @@ async function placeBubbles(read: ReadBubble[], found: PageBubbles): Promise<Bub
     const parts = splitRegion(found.regions[n - 1]!, lines.map(toDetect));
     for (const [i, line] of lines.entries()) {
       const part = parts[i]!;
-      if (!line.readable || !line.translation.trim() || !part.w) continue; // unreadable: leave raw
+      // Unreadable, or already in the target language: leave the bubble as it is. (It still kept
+      // its part of a shared shape above, so a neighbour's label can't cover it.)
+      if (!line.readable || line.inTargetLanguage || !line.translation.trim() || !part.w) continue;
       const { box, shape } = await regionShape(part, found);
       placed.push({ box, shape, source: line.source, translation: line.translation.trim(), readable: true });
     }
@@ -193,7 +245,8 @@ function keepAlive() {
 
 async function switchTab(tabId: number, on: boolean) {
   const prev = await getTabState(tabId);
-  const state = on ? { on: true, language: prev?.language ?? 'en' as const } : null;
+  // Switching on afresh resets the chime and chapter toasts; switching on an already-on tab keeps them.
+  const state = on ? (prev?.on ? prev : { on: true, language: prev?.language ?? ('en' as const) }) : null;
   await setTabState(tabId, state);
   await browser.tabs.sendMessage(tabId, { type: 'tabStateChanged', state } satisfies Message).catch(() => {});
   return state;
