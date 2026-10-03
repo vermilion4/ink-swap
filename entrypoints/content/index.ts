@@ -4,8 +4,9 @@
 import { browser } from 'wxt/browser';
 import { capturePage, isFullyOnScreen } from '@/lib/capture';
 import { createFinder, type FoundPage } from '@/lib/finder';
-import type { Message } from '@/lib/messages';
+import type { Message, TranslateResponse } from '@/lib/messages';
 import { createOverlay } from '@/lib/overlay';
+import { snapBubbles } from '@/lib/snap';
 import type { TabState } from '@/lib/settings';
 
 export default defineContentScript({
@@ -31,23 +32,42 @@ export default defineContentScript({
       if (done.has(page.id)) return;
       done.add(page.id);
       overlay.setStatus(page.id, page.el, 'capturing');
+      let shot;
       try {
-        const shot = await capturePage(page.el, overlay.setHidden);
-        overlay.setStatus(page.id, page.el, 'captured');
-        await browser.runtime.sendMessage({
-          type: 'pageCaptured',
-          pageId: page.id,
-          method: shot.method,
-          dataUrl: shot.dataUrl,
-        } satisfies Message);
+        shot = await capturePage(page.el, overlay.setHidden);
       } catch (e) {
         console.warn('[InkSwap] capture failed', page.id, e);
         done.delete(page.id);
         overlay.setStatus(page.id, page.el, 'failed');
+        return;
+      }
+      overlay.setStatus(page.id, page.el, 'translating');
+      const res = (await browser.runtime.sendMessage({
+        type: 'translatePage',
+        pageId: page.id,
+        method: shot.method,
+        dataUrl: shot.dataUrl,
+        width: shot.width,
+        height: shot.height,
+      } satisfies Message)) as TranslateResponse;
+      // The reader may have swapped this element to another page while we waited.
+      if (!finder.pages.has(page.el) || finder.pages.get(page.el)!.id !== page.id) return;
+      if (res.ok) {
+        const bubbles = await snapBubbles(shot.dataUrl, res.bubbles).catch((e) => {
+          console.warn('[InkSwap] snap step failed, using Claude boxes', e);
+          return res.bubbles;
+        });
+        await overlay.setBubbles(page.id, page.el, bubbles, language);
+      } else {
+        // Toasts and the Retry pill come in a later step; for now the page stays raw and outlined red.
+        console.warn('[InkSwap] translation failed', page.id, res.kind, res.error);
+        overlay.setStatus(page.id, page.el, 'failed');
       }
     }
 
+    let language = 'en';
     function apply(state: TabState | null) {
+      if (state) language = state.language;
       if (state?.on) {
         overlay.mount();
         finder.start();

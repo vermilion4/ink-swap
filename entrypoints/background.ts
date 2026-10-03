@@ -1,10 +1,27 @@
 import { browser } from 'wxt/browser';
-import type { DataUrlResponse, Message } from '@/lib/messages';
-import { getTabState, setTabState } from '@/lib/settings';
+import type { DataUrlResponse, Message, TranslateResponse } from '@/lib/messages';
+import { splitRegion } from '@/lib/bubbles';
+import { detectBubbles, loadBitmap, regionShape, squareImage, type PageBubbles } from '@/lib/pageimage';
+import { getApiKey, getTabState, setTabState } from '@/lib/settings';
+import { translatePage, TranslateError, type Bubble, type ReadBubble } from '@/lib/translate';
 
-// The last few captured pages, kept for inspection while developing.
+// The last few captured pages and translations, kept for inspection while developing.
 const recentCaptures: { pageId: string; method: string; dataUrl: string; at: number }[] = [];
-(globalThis as any).__inkswap = { recentCaptures };
+const recentTranslations: {
+  pageId: string;
+  ok: boolean;
+  bubbles?: ReadBubble[];
+  found?: number;
+  marked?: string | null;
+  error?: string;
+  usage?: { input: number; output: number };
+  ms?: number;
+}[] = [];
+(globalThis as any).__inkswap = { recentCaptures, recentTranslations };
+const remember = <T>(list: T[], item: T) => {
+  list.push(item);
+  if (list.length > 6) list.shift();
+};
 
 export default defineBackground(() => {
   browser.tabs.onRemoved.addListener((tabId) => {
@@ -38,15 +55,98 @@ export default defineBackground(() => {
         captureVisible(sender.tab.windowId).then(sendResponse);
         return true;
 
-      case 'pageCaptured':
-        recentCaptures.push({ pageId: msg.pageId, method: msg.method, dataUrl: msg.dataUrl, at: Date.now() });
-        if (recentCaptures.length > 6) recentCaptures.shift();
-        sendResponse({ ok: true });
-        return false;
+      case 'translatePage':
+        if (tabId == null) return false;
+        remember(recentCaptures, { pageId: msg.pageId, method: msg.method, dataUrl: msg.dataUrl, at: Date.now() });
+        translate(tabId, msg.pageId, msg.dataUrl, msg.width, msg.height).then(sendResponse);
+        return true;
     }
     return false;
   });
 });
+
+async function translate(
+  tabId: number,
+  pageId: string,
+  dataUrl: string,
+  width: number,
+  height: number,
+): Promise<TranslateResponse> {
+  const language = (await getTabState(tabId))?.language ?? 'en';
+  const stopKeepAlive = keepAlive();
+  try {
+    const bmp = await loadBitmap(dataUrl);
+    const found = detectBubbles(bmp);
+    const size = Math.max(bmp.width, bmp.height);
+    const asImage = (url: string) => ({
+      base64: url.slice(url.indexOf(',') + 1),
+      mediaType: 'image/jpeg' as const,
+      width: size,
+      height: size,
+    });
+    const clean = asImage(await squareImage(bmp));
+    const marked = found.regions.length ? asImage(await squareImage(bmp, found)) : null;
+    const result = await translatePage(
+      { clean, marked, markedCount: found.regions.length },
+      { width, height },
+      language,
+      await getApiKey(),
+    );
+    const bubbles = await placeBubbles(result.bubbles, found);
+    remember(recentTranslations, { pageId, ok: true, ...result, found: found.regions.length, marked: marked && `data:image/jpeg;base64,${marked.base64}` });
+    console.log(`[InkSwap] ${pageId}: ${result.bubbles.length} lines, ${found.regions.length} bubbles found, ${result.ms}ms, tokens`, result.usage);
+    return { ok: true, bubbles };
+  } catch (e) {
+    const err = e instanceof TranslateError ? e : new TranslateError('failed', String(e));
+    remember(recentTranslations, { pageId, ok: false, error: `${err.kind}: ${err.message}` });
+    console.warn(`[InkSwap] ${pageId} failed:`, err.kind, err.message);
+    return { ok: false, kind: err.kind, error: err.message };
+  } finally {
+    stopKeepAlive();
+  }
+}
+
+/**
+ * Lines Claude put in a found bubble take that bubble's exact box and shape (several lines in
+ * one bubble are joined). Lines outside any found bubble keep Claude's own box.
+ */
+async function placeBubbles(read: ReadBubble[], found: PageBubbles): Promise<Bubble[]> {
+  const placed: Bubble[] = [];
+  const byRegion = new Map<number, ReadBubble[]>();
+  for (const b of read) {
+    if (b.bubble == null) placed.push({ box: b.box, source: b.source, translation: b.translation, readable: b.readable });
+    else byRegion.set(b.bubble, [...(byRegion.get(b.bubble) ?? []), b]);
+  }
+  const { width, height } = found.gray;
+  const toDetect = (b: ReadBubble) => ({
+    x: (b.box.x / 1000) * width,
+    y: (b.box.y / 1000) * height,
+    w: (b.box.w / 1000) * width,
+    h: (b.box.h / 1000) * height,
+  });
+  for (const [n, lines] of byRegion) {
+    // Several lines in one shape are usually touching bubbles: give each line its own part.
+    const parts = splitRegion(found.regions[n - 1]!, lines.map(toDetect));
+    for (const [i, line] of lines.entries()) {
+      const part = parts[i]!;
+      if (!line.readable || !line.translation.trim() || !part.w) continue; // unreadable: leave raw
+      const { box, shape } = await regionShape(part, found);
+      placed.push({ box, shape, source: line.source, translation: line.translation.trim(), readable: true });
+    }
+  }
+  return placed;
+}
+
+// Chrome may stop an idle background worker after ~30s, even mid-request. A cheap
+// extension call every 20s keeps it alive while a translation is in flight.
+let inFlight = 0;
+let keepAliveTimer: ReturnType<typeof setInterval> | undefined;
+function keepAlive() {
+  if (inFlight++ === 0) keepAliveTimer = setInterval(() => void browser.runtime.getPlatformInfo(), 20_000);
+  return () => {
+    if (--inFlight === 0) clearInterval(keepAliveTimer);
+  };
+}
 
 async function switchTab(tabId: number, on: boolean) {
   const prev = await getTabState(tabId);

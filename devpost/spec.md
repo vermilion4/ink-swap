@@ -146,7 +146,7 @@ PRD ref: `prd.md > Bubble Translation and Overlay`.
 ### Overlay Renderer
 Draws InkSwap's on-page layer inside a **shadow root**, a sealed-off area so the manga site's styles can't distort InkSwap's and vice versa. The layer sits exactly over each page element and repositions when the page resizes or reflows.
 - **Loading state:** a gradient spinner over the page while it translates.
-- **Translated state:** one label per readable bubble. Claude's boxes (0–1000 scale) are converted to on-screen pixels and padded slightly. The font size is reduced step by step until the text fits.
+- **Translated state:** one label per readable bubble, painted in the bubble's exact shape when InkSwap found it (see the checklist's Revisions), otherwise a padded rounded label over Claude's box. Boxes (0–1000 page scale) are converted to on-screen positions. The font size is reduced step by step until the text fits.
 - **Opacity:** a single CSS variable `--inkswap-opacity`, updated live when the setting changes.
 - **Failed state:** the page stays raw, with a "↻ Retry" pill in its top-right corner.
 
@@ -179,7 +179,8 @@ PRD ref: `prd.md > Changing Language Mid-Chapter`.
 
 ```ts
 { bubbles: Array<{
-    box: { x: number; y: number; w: number; h: number }; // 0–1000, relative to the page image
+    box: { x: number; y: number; w: number; h: number }; // Claude answers in image pixels; stored on a 0–1000 page scale
+    bubble: number | null; // which numbered found bubble it sits in (null: not in one)
     source: string;        // original text as read
     translation: string;   // meaning-first, in the target language
     readable: boolean;     // false → leave this bubble raw

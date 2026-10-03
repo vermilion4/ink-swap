@@ -1,6 +1,7 @@
 // The messages the popup, background worker, and page helper send each other.
 
 import type { TabState } from './settings';
+import type { Bubble, TranslateFailure } from './translate';
 
 export type Message =
   // page helper → background: "is my tab on?"
@@ -15,9 +16,13 @@ export type Message =
   | { type: 'fetchImage'; url: string }
   // page helper → background: screenshot the visible tab
   | { type: 'captureVisible' }
-  // page helper → background: a page picture is ready
-  | { type: 'pageCaptured'; pageId: string; method: CaptureMethod; dataUrl: string };
+  // page helper → background: translate this captured page picture
+  | { type: 'translatePage'; pageId: string; method: CaptureMethod; dataUrl: string; width: number; height: number };
 
 export type CaptureMethod = 'image' | 'canvas' | 'fetch' | 'screenshot';
 
 export type DataUrlResponse = { ok: true; dataUrl: string } | { ok: false; error: string };
+
+export type TranslateResponse =
+  | { ok: true; bubbles: Bubble[] }
+  | { ok: false; kind: TranslateFailure; error: string };

@@ -19,7 +19,7 @@ Build mode: fast
   Learner check: Load the extension (`npm run dev`), paste your key, open a raw MangaDex chapter, flip the toggle on, and scroll. Each page should get a subtle outline as it comes into view. Look at the captured pages I show you from both sites and confirm they look like the real pages.
   Commit: `Scaffold InkSwap and capture manga pages on MangaDex and Shonen Jump+`
 
-- [ ] **2. One page reads as a natural English page**
+- [x] **2. One page reads as a natural English page**
   Becomes usable: On a switched-on tab, the first page in view shows a gradient spinner, then each readable bubble is covered by a fitted, hand-lettered English translation at 0.95 opacity. Unreadable bubbles stay raw.
   Why now: This is the unique kernel: meaning-first translation sitting right on the bubble. It comes immediately after we know capture works, so that the hardest and most important part is proven early, and your reaction to how it reads can shape everything after.
   PRD ref: `prd.md > Bubble Translation and Overlay`, `prd.md > Look and Feel`, `prd.md > The Core Journey` (steps 3–4, 7)
@@ -71,7 +71,8 @@ Build mode: fast
 
 ## Hands-on Checkpoints
 
-- [ ] Early usable behavior explored — after slice 2: you read a real translated page, and your prompt revisions and reactions shape the rest of the build
+- [x] Early usable behavior explored — after slice 2: you read a real translated page, and your prompt revisions and reactions shape the rest of the build
+  Outcome: translations read naturally (tested on MangaDex, Shonen Jump+, and an Indonesian page). Placement was the problem; your feedback (vertical-letter wrapping, labels too big/off their bubbles, a bubble pushed off-screen) led to the one-to-one numbered-bubble approach, which you confirmed works on your Indonesian page.
 - [ ] Final kick-the-tires exploration and feedback completed
 
 ## Final Review
@@ -96,3 +97,10 @@ Activity mode:
 - Capture methods confirmed: MangaDex shows each page as an `<img>` with a same-origin `blob:` URL (images from `*.mangadex.network`), read directly. Shonen Jump+ draws pages on protected canvases (`cdn-scissors.gigaviewer.com`) in a sideways two-page viewer, so it uses the screenshot crop, as the spec predicted.
 - MangaDex's default reader shows one page at a time and swaps the image, so the Page Finder treats an `<img>` whose picture changes as a new page.
 - WXT is v0.21.4 (spec said 0.20.x, check at build start); TypeScript 7, Vitest 5, Playwright added as a dev tool for `scripts/try-extension.mjs`.
+- **Bubble placement (slice 2):** Claude's own bubble boxes were too far off to place labels one-to-one (some landed a whole bubble away). InkSwap now finds the bubbles itself — each bubble's inside is a closed white shape with the letters as holes (`lib/bubbles.ts`, unit-tested) — and sends Claude two images: the clean page to read, and a copy with the found bubbles shaded and numbered. Claude says which numbered bubble each line belongs to, and the label is painted in that bubble's exact shape, with the text in the widest rectangle inside it. Touching bubbles found as one shape are split between their lines. Lines outside any found bubble (e.g. narration on artwork) fall back to Claude's box, snapped to a white area if there is one (`lib/snap.ts`) and widened if it's a thin vertical column. The learner asked for this approach after testing.
+- Claude now gives boxes in the image's own pixels (asking for 0–1000 directly gave mixed scales); code converts them to the 0–1000 page scale the rest of the system uses. Pages are padded to a white square before sending — measured to place boxes more accurately than the bare page or higher effort.
+- Cost per page measured at ~1.2–2.5¢ (two images now; MangaDex pages are full resolution), 5–7 s; the spec estimated ~1¢.
+- The "which bubble number" instruction lives in the request the code builds (`lib/translate.ts`), not in the learner's prompt, which stays purely about how to translate.
+- Refusal fallback not turned on: for Sonnet 5.5 it only retries cyber and frontier-LLM declines, which manga translation won't hit. A refusal is a failed page with Retry.
+- Effort stays `medium`: `high` placed boxes no better in a side-by-side test.
+- Learner decisions at the slice 2 checkpoint: floating narration (text on the artwork, not in a bubble) uses Claude's rough box and may sit off its text; accepted as a known limit for the PoC. Chapter titles may be translated (keep as is).

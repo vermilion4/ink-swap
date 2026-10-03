@@ -7,7 +7,8 @@
 //   --turn-left  press ArrowLeft N times (paged right-to-left viewers like Shonen Jump+)
 //   --turn-right press ArrowRight N times (left-to-right single-page readers like MangaDex)
 //   --scroll     scroll down N screens (long-strip readers)
-// Set ANTHROPIC_API_KEY to store a key in the extension before switching on.
+// Set ANTHROPIC_API_KEY to store a key in the extension before switching on
+// (e.g. put it in a git-ignored .env and run with `node --env-file=.env ...`).
 
 import { chromium } from 'playwright';
 import fs from 'node:fs';
@@ -72,12 +73,35 @@ for (let i = 1; i <= flag('--scroll'); i++) {
   await page.screenshot({ path: path.join(outDir, `view-${i}.png`) });
 }
 
-const overlay = await page.evaluate(() => {
-  const host = document.querySelector('inkswap-overlay');
-  if (!host?.shadowRoot) return { mounted: false, pages: [] };
-  return { mounted: true, pages: [...host.shadowRoot.querySelectorAll('.page')].map((p) => p.dataset.status) };
-});
+const readOverlay = () =>
+  page.evaluate(() => {
+    const host = document.querySelector('inkswap-overlay');
+    if (!host?.shadowRoot) return { mounted: false, pages: [], labels: 0 };
+    return {
+      mounted: true,
+      pages: [...host.shadowRoot.querySelectorAll('.page')].map((p) => p.dataset.status),
+      labels: host.shadowRoot.querySelectorAll('.label').length,
+    };
+  });
+
+// Wait (up to 2 minutes) for pages still being captured or translated.
+let overlay = await readOverlay();
+for (let t = 0; t < 120 && overlay.pages.some((s) => s === 'capturing' || s === 'translating'); t++) {
+  await page.waitForTimeout(1000);
+  overlay = await readOverlay();
+}
 console.log('overlay:', JSON.stringify(overlay));
+if (overlay.labels) await page.screenshot({ path: path.join(outDir, 'translated.png') });
+
+const translations = await sw.evaluate(() => globalThis.__inkswap.recentTranslations);
+translations.forEach((t, i) => {
+  if (!t.ok) return console.log('translation failed', t.pageId, t.error);
+  console.log(`translated ${t.pageId}: ${t.bubbles.length} lines, ${t.found} bubbles found, ${(t.ms / 1000).toFixed(1)}s, tokens in ${t.usage.input} / out ${t.usage.output}`);
+  // The numbered copy of the page Claude saw.
+  if (t.marked) fs.writeFileSync(path.join(outDir, `marked-${i}.jpg`), Buffer.from(t.marked.split(',')[1], 'base64'));
+  delete t.marked;
+});
+if (translations.length) fs.writeFileSync(path.join(outDir, 'translations.json'), JSON.stringify(translations, null, 2));
 
 const captures = await sw.evaluate(() => globalThis.__inkswap.recentCaptures.map(({ pageId, method, dataUrl }) => ({ pageId, method, dataUrl })));
 captures.forEach((c, i) => {

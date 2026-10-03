@@ -4,6 +4,7 @@
 
 import { browser } from 'wxt/browser';
 import type { CaptureMethod, DataUrlResponse, Message } from './messages';
+import { blobToDataUrl } from './pageimage';
 
 export const MAX_EDGE = 1568;
 const JPEG_QUALITY = 0.85;
@@ -87,14 +88,6 @@ async function encode(
   return { method, dataUrl: await blobToDataUrl(blob), width: outW, height: outH };
 }
 
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result as string);
-    r.onerror = () => reject(r.error);
-    r.readAsDataURL(blob);
-  });
-}
 
 function nextFrame() {
   return new Promise((r) => requestAnimationFrame(() => r(null)));

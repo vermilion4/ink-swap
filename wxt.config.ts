@@ -19,5 +19,9 @@ export default defineConfig({
       'https://*.shonenjumpplus.com/*',
       'https://*.gigaviewer.com/*',
     ],
+    // The bundled bubble font, loaded by the overlay on the reading sites.
+    web_accessible_resources: [
+      { resources: ['fonts/*'], matches: ['https://mangadex.org/*', 'https://shonenjumpplus.com/*'] },
+    ],
   },
 });
