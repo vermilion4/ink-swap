@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manga Overlay Scope</title>
+<style>
+  :root {
+    --bg: #0f0f12; --panel: #18181d; --panel-2: #212128; --line: #2e2e38;
+    --text: #ececf1; --muted: #9a9aa8; --accent: #f47521; --accent-soft: rgba(244,117,33,.14);
+    --good: #4ade80; --bad: #f87171; --paper: #f4f1ea; --ink: #16161a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 48px 16px 80px; }
+  .tag { display: inline-block; font-size: 12px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 2px 10px; }
+  h1 { font-size: clamp(30px, 5vw, 48px); line-height: 1.1; margin: 14px 0 10px; letter-spacing: -.02em; }
+  h2 { font-size: 22px; margin: 0 0 14px; }
+  .lede { color: var(--muted); font-size: 18px; max-width: 720px; margin: 0; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 24px; margin-top: 24px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+  .card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .label { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 6px; }
+  .bad { color: var(--bad); } .good { color: var(--good); }
+  .quote { font-size: 20px; font-weight: 600; }
+  blockquote { margin: 0; padding: 12px 16px; border: 1px solid var(--accent); background: var(--accent-soft);
+    border-radius: 10px; font-style: italic; }
+  svg text { font-family: inherit; }
+  .diagram { width: 100%; height: auto; display: block; }
+  /* demo page */
+  .demo { display: grid; grid-template-columns: 1fr 260px; gap: 20px; align-items: center; }
+  @media (max-width: 720px) { .demo { grid-template-columns: 1fr; } }
+  .page { position: relative; background: var(--paper); border-radius: 8px; aspect-ratio: 3/4; max-width: 340px;
+    width: 100%; margin: 0 auto; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+  .panel-line { position: absolute; border: 3px solid var(--ink); border-radius: 2px; }
+  .bubble { position: absolute; background: #fff; border: 2.5px solid var(--ink); border-radius: 50%;
+    display: grid; place-items: center; overflow: hidden; }
+  .jp { writing-mode: vertical-rl; font-size: 15px; color: var(--ink); font-weight: 600; line-height: 1.3; }
+  .ov { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 14%;
+    background: rgba(255,255,255,var(--op)); color: var(--ink); font-weight: 700; font-size: 13px; line-height: 1.25;
+    transition: opacity .35s; }
+  .controls label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+  .controls input[type=range] { width: 100%; accent-color: var(--accent); }
+  .btn { margin-top: 14px; width: 100%; background: var(--accent); color: #111; border: 0; border-radius: 10px;
+    padding: 10px 14px; font-weight: 700; cursor: pointer; font-size: 15px; }
+  .langs { display: flex; gap: 8px; }
+  .langs button { flex: 1; background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px; font-weight: 700; cursor: pointer; }
+  .langs button.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .btn.off { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); }
+  .note { font-size: 13px; color: var(--muted); margin-top: 10px; }
+  details { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; margin-top: 12px; }
+  summary { cursor: pointer; padding: 14px 16px; font-weight: 700; list-style: none; display: flex; align-items: center; gap: 10px; }
+  summary::-webkit-details-marker { display: none; }
+  summary .dot { width: 10px; height: 10px; border-radius: 50%; }
+  summary .count { margin-left: auto; color: var(--muted); font-weight: 500; font-size: 14px; }
+  details ul { margin: 0; padding: 0 20px 16px 38px; }
+  details li { margin: 6px 0; }
+  details li span { color: var(--muted); }
+  .foot { color: var(--muted); font-size: 13px; margin-top: 28px; text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <span class="tag">Scope · approved</span>
+  <h1>Manga Overlay Translator</h1>
+  <p class="lede">A browser extension that translates raw manga as you scroll <em>any</em> manga site. Each speech bubble gets covered by a natural translation in your language that keeps the meaning.</p>
+
+  <section>
+    <h2>The unique kernel: meaning, not word-for-word</h2>
+    <div class="grid2">
+      <div class="card">
+        <div class="label">Word-for-word (what you get today)</div>
+        <div class="quote bad">“How did you get the other way?”</div>
+        <div class="quote bad" style="margin-top:8px">“I live at Lagos.”</div>
+      </div>
+      <div class="card">
+        <div class="label">Meaning-first (what this does)</div>
+        <div class="quote good">“How did you get into my house?”</div>
+        <div class="quote good" style="margin-top:8px">“I live in Lagos.”</div>
+      </div>
+    </div>
+    <p class="note">Translated one bubble at a time, so each line reads the way a fluent speaker of your language would say it. It doesn't need to remember the whole story.</p>
+  </section>
+
+  <section>
+    <h2>The core loop</h2>
+    <svg class="diagram" viewBox="0 0 940 230" role="img" aria-label="Reader opens a raw chapter on any manga site, scrolls, the extension finds bubbles, translates by meaning, overlays them, and the reader keeps reading">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#f47521"/></marker>
+      </defs>
+      <g font-size="14" fill="#ececf1" text-anchor="middle">
+        <rect x="10" y="60" width="150" height="80" rx="12" fill="#212128" stroke="#2e2e38"/>
+        <text x="85" y="94" font-weight="700">You open a raw</text><text x="85" y="114" fill="#9a9aa8">on any manga site</text>
+
+        <rect x="200" y="60" width="150" height="80" rx="12" fill="#212128" stroke="#2e2e38"/>
+        <text x="275" y="94" font-weight="700">Scroll</text><text x="275" y="114" fill="#9a9aa8">page comes into view</text>
+
+        <rect x="390" y="60" width="150" height="80" rx="12" fill="#212128" stroke="#f47521"/>
+        <text x="465" y="94" font-weight="700">Find bubbles</text><text x="465" y="114" fill="#9a9aa8">read the Japanese</text>
+
+        <rect x="580" y="60" width="150" height="80" rx="12" fill="rgba(244,117,33,.14)" stroke="#f47521" stroke-width="2"/>
+        <text x="655" y="94" font-weight="700" fill="#f47521">Translate by meaning</text><text x="655" y="114" fill="#9a9aa8">into your language</text>
+
+        <rect x="770" y="60" width="160" height="80" rx="12" fill="#212128" stroke="#f47521"/>
+        <text x="850" y="94" font-weight="700">Overlay on bubble</text><text x="850" y="114" fill="#9a9aa8">exact fit, 0.95 opacity</text>
+      </g>
+      <g stroke="#f47521" stroke-width="2" fill="none" marker-end="url(#ar)">
+        <path d="M160 100 H196"/><path d="M350 100 H386"/><path d="M540 100 H576"/><path d="M730 100 H766"/>
+        <path d="M850 140 V190 H275 V144"/>
+      </g>
+      <text x="560" y="212" font-size="13" fill="#9a9aa8" text-anchor="middle">keep scrolling and reading — never leave the site</text>
+      <text x="85" y="40" font-size="12" fill="#9a9aa8" text-anchor="middle">WHO: raw-manga readers like you &amp; friends</text>
+    </svg>
+  </section>
+
+  <section>
+    <h2>What “working” looks like: the demo beat</h2>
+    <div class="demo">
+      <div class="page" id="page" style="--op:.95">
+        <div class="panel-line" style="left:4%;top:3%;width:92%;height:46%"></div>
+        <div class="panel-line" style="left:4%;top:52%;width:44%;height:45%"></div>
+        <div class="panel-line" style="left:52%;top:52%;width:44%;height:45%"></div>
+        <div class="bubble" style="left:52%;top:8%;width:38%;height:34%">
+          <span class="jp">どうやって<br>家に入った？</span>
+          <div class="ov" data-k="0">How did you get into my house?</div>
+        </div>
+        <div class="bubble" style="left:10%;top:58%;width:32%;height:26%">
+          <span class="jp">ラゴスに<br>住んでる</span>
+          <div class="ov" data-k="1">I live in Lagos.</div>
+        </div>
+      </div>
+      <div class="controls">
+        <label for="op">Overlay opacity: <strong id="opv">0.95</strong> <span style="color:var(--muted)">(default 0.95, reader-adjustable)</span></label>
+        <input id="op" type="range" min="0.5" max="1" step="0.05" value="0.95">
+        <div id="langl" style="margin-top:14px;font-size:14px;color:var(--muted);margin-bottom:6px">Target language (phase one: English)</div>
+        <div class="langs" id="langs">
+          <button data-l="en" class="on">EN</button><button data-l="es">ES</button><button data-l="fr">FR</button>
+        </div>
+        <button class="btn" id="tog">Show raw Japanese</button>
+        <p class="note">In the demo, you scroll a raw chapter on one or two real manga sites. A page that was unreadable a second ago now reads like a cleanly translated page, and switching the language changes every bubble.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Why it matters to you</h2>
+    <blockquote>“As I'm just scrolling through, you're seeing it in English, overlaid and it's making sense. That would be epic for me.”</blockquote>
+    <p class="note">Fan translations are often word-for-word and copied across sites (“20+ translations that are the exact same junk”), and you don't want to be “conformed to just one website.”</p>
+  </section>
+
+  <section>
+    <h2>The boundary</h2>
+    <details open>
+      <summary><span class="dot" style="background:var(--good)"></span>Now: the proof of concept<span class="count">6</span></summary>
+      <ul>
+        <li>Browser extension that isn't built for one specific site, <strong>tested and demoed on one or two real raw sites</strong></li>
+        <li>Finds the speech bubbles, reads the source text, and translates <strong>by meaning</strong>, bubble by bubble</li>
+        <li>Draws each translation over its bubble: fully covering it, sized and placed to fit, <strong>0.95 opacity</strong> by default</li>
+        <li>Translates automatically as pages scroll into view</li>
+        <li>Simple settings: adjustable overlay opacity and a target-language picker</li>
+        <li>Japanese source. <strong>Phase one is English only</strong>, then Spanish and French for the demo</li>
+      </ul>
+    </details>
+    <details>
+      <summary><span class="dot" style="background:var(--accent)"></span>Later<span class="count">7</span></summary>
+      <ul>
+        <li>Proven reliability across many sites and layouts</li>
+        <li>Polished typesetting: manga fonts, curved text, matching each bubble's style</li>
+        <li>Sound effects and text outside bubbles</li>
+        <li>Caching so re-reading is instant and free</li>
+        <li>Korean webtoons, Chinese manhua, and other source languages</li>
+        <li>Fully polished dark, Crunchyroll-inspired settings UI</li>
+        <li>More target languages beyond English, Spanish, and French</li>
+      </ul>
+    </details>
+    <details>
+      <summary><span class="dot" style="background:var(--bad)"></span>Explicitly cut<span class="count">3</span></summary>
+      <ul>
+        <li>Whole-story context across chapters: <span>the goal is that each bubble makes sense on its own, not story memory</span></li>
+        <li>Sheet-music idea: <span>you chose manga and want more music knowledge before shaping that one</span></li>
+        <li>Standalone reader site: <span>the point is reading on the sites people already use</span></li>
+      </ul>
+    </details>
+  </section>
+
+  <p class="foot">Companion to <code>devpost/scope.md</code>, which is the source of truth.</p>
+</main>
+<script>
+  const page = document.getElementById('page'), op = document.getElementById('op'),
+        opv = document.getElementById('opv'), tog = document.getElementById('tog');
+  op.addEventListener('input', () => { page.style.setProperty('--op', op.value); opv.textContent = (+op.value).toFixed(2); });
+  const T = { en: ['How did you get into my house?', 'I live in Lagos.'],
+              es: ['¿Cómo entraste a mi casa?', 'Vivo en Lagos.'],
+              fr: ['Comment es-tu entré chez moi ?', "J'habite à Lagos."] };
+  document.querySelectorAll('#langs button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#langs button').forEach(x => x.classList.toggle('on', x === b));
+    document.querySelectorAll('.ov').forEach(o => o.textContent = T[b.dataset.l][o.dataset.k]);
+  }));
+  let raw = false;
+  tog.addEventListener('click', () => {
+    raw = !raw;
+    document.querySelectorAll('.ov').forEach(o => o.style.opacity = raw ? 0 : 1);
+    tog.textContent = raw ? 'Show translation' : 'Show raw Japanese';
+    tog.classList.toggle('off', raw);
+  });
+</script>
+</body>
+</html>

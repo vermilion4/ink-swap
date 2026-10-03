@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InkSwap Technical Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Shantell+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f3f8; --panel: #ffffff; --panel-2: #f1ecf5; --line: #e0d6e8;
+    --text: #1d1a22; --muted: #6c6478; --accent: #c13fa8; --accent-2: #9b5de5;
+    --accent-soft: rgba(193,63,168,.10); --good: #15803d; --bad: #dc2626; --warn: #b45309;
+    --node: #ffffff; --ink: #16161a;
+    --hand: "Shantell Sans", "Comic Sans MS", cursive; --display: "Bangers", Impact, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #0f0d12; --panel: #18151d; --panel-2: #221e29; --line: #2f2938; --text: #efeaf3; --muted: #a59bb2;
+    --accent: #e055c4; --accent-2: #b183f0; --accent-soft: rgba(224,85,196,.14); --good: #4ade80; --bad: #f87171; --warn: #fbbf24; --node: #221e29;
+  } }
+  :root[data-theme="dark"] {
+    --bg: #0f0d12; --panel: #18151d; --panel-2: #221e29; --line: #2f2938; --text: #efeaf3; --muted: #a59bb2;
+    --accent: #e055c4; --accent-2: #b183f0; --accent-soft: rgba(224,85,196,.14); --good: #4ade80; --bad: #f87171; --warn: #fbbf24; --node: #221e29;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 44px 16px 80px; }
+  .tag { display: inline-block; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 2px 10px; }
+  h1 { font-family: var(--display); font-weight: 400; letter-spacing: .03em; font-size: clamp(42px, 7vw, 64px); line-height: 1; margin: 14px 0 6px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  h2 { font-size: 22px; margin: 0 0 12px; }
+  h3 { font-size: 16px; margin: 0 0 6px; }
+  .lede { color: var(--muted); font-size: 18px; max-width: 760px; margin: 0; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 24px; margin-top: 24px; }
+  .note { font-size: 13px; color: var(--muted); }
+  .themebtn { float: right; border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 999px; padding: 4px 12px; cursor: pointer; font-size: 13px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .chip { border: 1px solid var(--line); background: var(--panel-2); border-radius: 999px; padding: 4px 12px; font-size: 14px; }
+  .chip b { color: var(--accent); }
+  .plain p { margin: 0 0 10px; }
+  .plain ol { margin: 0 0 10px; padding-left: 22px; } .plain li { margin: 6px 0; }
+  /* architecture */
+  .arch { width: 100%; height: auto; display: block; }
+  .arch .n rect { fill: var(--node); stroke: var(--line); stroke-width: 1.5; transition: .25s; }
+  .arch .n text { fill: var(--text); font-size: 15px; font-weight: 700; }
+  .arch .n .sub { fill: var(--muted); font-size: 12px; font-weight: 400; }
+  .arch .n.hot rect { stroke: var(--accent); stroke-width: 3; fill: var(--accent-soft); }
+  .arch .e { stroke: var(--line); stroke-width: 2; fill: none; transition: .25s; }
+  .arch .e.hot { stroke: var(--accent); stroke-width: 3; }
+  .arch .lbl { fill: var(--muted); font-size: 11px; }
+  .stepper { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 14px; }
+  .stepcard { background: var(--panel-2); border: 1px solid var(--accent); border-radius: 12px; padding: 14px 16px; min-height: 92px; }
+  .stepcard .num { font-family: var(--display); font-size: 22px; color: var(--accent); letter-spacing: .04em; }
+  .stepcard .refs { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .nav { display: flex; gap: 8px; align-items: center; }
+  .nav button { border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 10px; padding: 8px 14px; font-weight: 700; cursor: pointer; }
+  .nav button.pri { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border: 0; }
+  .dots { display: flex; gap: 6px; margin-left: auto; }
+  .dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); cursor: pointer; }
+  .dots i.on { background: var(--accent); }
+  /* capture */
+  .flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  @media (max-width: 760px) { .flow { grid-template-columns: 1fr; } }
+  .fcard { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; position: relative; }
+  .fcard .k { font-family: var(--display); color: var(--accent); font-size: 20px; letter-spacing: .04em; }
+  .site { display: inline-block; font-size: 12px; border-radius: 999px; padding: 1px 9px; margin: 6px 4px 0 0; border: 1px solid var(--line); }
+  .site.likely { border-color: var(--accent); color: var(--accent); }
+  /* details */
+  details { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; margin-top: 10px; }
+  summary { cursor: pointer; padding: 13px 16px; font-weight: 700; list-style: none; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  summary::-webkit-details-marker { display: none; }
+  summary .dot { width: 10px; height: 10px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); flex: none; }
+  summary code { margin-left: auto; font-weight: 500; font-size: 12px; color: var(--muted); }
+  details .body { padding: 0 18px 14px 36px; }
+  details ul { margin: 0; padding-left: 18px; } details li { margin: 4px 0; }
+  .prd { display: inline-block; font-size: 12px; background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 1px 8px; margin: 2px 4px 2px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td, th { text-align: left; padding: 9px 10px; border-top: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; border-top: 0; }
+  pre { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; overflow-x: auto; font-size: 13px; line-height: 1.5; margin: 0; }
+  .decide { border: 2px solid var(--accent); }
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+  @media (max-width: 760px) { .opts { grid-template-columns: 1fr; } }
+  .opt { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+  .mini { position: relative; background: #f4f1ea; border-radius: 6px; height: 150px; margin-top: 10px; overflow: hidden; }
+  .mb { position: absolute; background: #fff; border: 2px solid var(--ink); border-radius: 50%; display: grid; place-items: center; }
+  .spin { width: 20px; height: 20px; border-radius: 50%; border: 3px solid rgba(193,63,168,.2); border-top-color: var(--accent); animation: r .8s linear infinite; }
+  .bigspin { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(255,255,255,.55); }
+  .bigspin .spin { width: 34px; height: 34px; }
+  @keyframes r { to { transform: rotate(360deg); } }
+  .pill-toast { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--accent); border-radius: 999px; padding: 6px 14px 6px 8px; background: var(--panel); box-shadow: 0 0 0 4px var(--accent-soft); font-size: 14px; }
+  .pill-toast i { width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; display: grid; place-items: center; font-style: normal; font-size: 12px; font-weight: 700; }
+  .swatch { display: inline-block; width: 34px; height: 34px; border-radius: 10px; vertical-align: middle; margin-right: 6px; border: 1px solid var(--line); }
+  .foot { color: var(--muted); font-size: 13px; margin-top: 28px; text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <button class="themebtn" id="theme">Toggle light/dark</button>
+  <span class="tag">Spec · approved</span>
+  <h1>InkSwap Blueprint</h1>
+  <p class="lede">How InkSwap is built: four pieces, one Claude call per page, no server of our own.</p>
+  <div class="chips">
+    <span class="chip"><b>Chrome</b> extension (MV3)</span>
+    <span class="chip"><b>TypeScript</b> + <b>WXT</b></span>
+    <span class="chip"><b>Claude Sonnet 5.5</b></span>
+    <span class="chip"><b>Bring-your-own</b> API key</span>
+    <span class="chip">~<b>1¢</b>/page (estimate)</span>
+  </div>
+
+  <section class="plain">
+    <h2>How this works, in plain language</h2>
+    <ol>
+      <li><b>Popup</b>: the panel behind the InkSwap icon. It has the on/off toggle, language, opacity, chime and toasts switches, and your API key.</li>
+      <li><b>Background worker</b>: the brain. It remembers which tabs are on, adds the right-click item, and is the only piece that talks to Claude.</li>
+      <li><b>Page helper</b>: code placed inside the manga site's page. It finds page images, notices them scrolling in, and draws spinners, translated bubbles, toasts, and Retry.</li>
+      <li><b>Claude Sonnet 5.5</b>: gets one page image and returns <i>"here's every bubble's box, and its meaning-first translation."</i></li>
+    </ol>
+    <p class="note">Why one Claude call instead of separate text-recognition and translation services: Claude sees the whole page (speaker, scene, art), which is what makes "I live <b>in</b> Lagos" possible. It's also one service, one key, and one failure point.</p>
+  </section>
+
+  <section>
+    <h2>Walk a page through the system</h2>
+    <svg class="arch" viewBox="0 0 960 330" role="img" aria-label="Architecture: popup and page helper talk to the background worker, which talks to Claude and chrome storage">
+      <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+      <g style="color:var(--muted)">
+        <path class="e" id="e-pop-bg" d="M210 75 H380" marker-end="url(#ah)"/>
+        <path class="e" id="e-page-bg" d="M210 245 H380" marker-end="url(#ah)" marker-start="url(#ah)"/>
+        <path class="e" id="e-bg-claude" d="M580 160 H730" marker-end="url(#ah)" marker-start="url(#ah)"/>
+        <path class="e" id="e-bg-store" d="M480 220 V270" marker-end="url(#ah)" marker-start="url(#ah)"/>
+        <path class="e" id="e-pop-store" d="M110 110 V140 Q110 160 130 160 H370" />
+      </g>
+      <text class="lbl" x="295" y="66" text-anchor="middle">toggle · settings</text>
+      <text class="lbl" x="295" y="236" text-anchor="middle">page image ⇄ bubbles</text>
+      <text class="lbl" x="655" y="150" text-anchor="middle">image + prompt ⇄ JSON</text>
+      <g class="n" id="n-pop"><rect x="10" y="40" width="200" height="70" rx="14"/><text x="110" y="70" text-anchor="middle">Popup</text><text class="sub" x="110" y="90" text-anchor="middle">toggle · lang · opacity · key</text></g>
+      <g class="n" id="n-page"><rect x="10" y="210" width="200" height="70" rx="14"/><text x="110" y="240" text-anchor="middle">Page helper</text><text class="sub" x="110" y="260" text-anchor="middle">find · capture · draw · toast</text></g>
+      <g class="n" id="n-bg"><rect x="380" y="100" width="200" height="120" rx="14"/><text x="480" y="140" text-anchor="middle">Background worker</text><text class="sub" x="480" y="162" text-anchor="middle">tab state · right-click</text><text class="sub" x="480" y="180" text-anchor="middle">Claude calls · screenshot</text><text class="sub" x="480" y="198" text-anchor="middle">chime (offscreen)</text></g>
+      <g class="n" id="n-claude"><rect x="730" y="120" width="210" height="80" rx="14"/><text x="835" y="152" text-anchor="middle">Claude Sonnet 5.5</text><text class="sub" x="835" y="174" text-anchor="middle">api.anthropic.com</text></g>
+      <g class="n" id="n-store"><rect x="380" y="270" width="200" height="50" rx="14"/><text x="480" y="300" text-anchor="middle" style="font-size:13px">chrome.storage</text></g>
+    </svg>
+    <div class="stepper">
+      <div class="stepcard"><div class="num" id="snum">STEP 1</div><div id="stext"></div><div class="refs" id="srefs"></div></div>
+      <div class="nav"><button id="prev">← Back</button><button class="pri" id="next">Next →</button><div class="dots" id="dots"></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Getting the page picture (the big unknown)</h2>
+    <p class="note" style="margin-top:-4px">Tried in order. The <b>first build step</b> tests both of your sites and records which method each needs.</p>
+    <div class="flow">
+      <div class="fcard"><div class="k">1 · Direct image</div>Download the <code>&lt;img&gt;</code> file through the background worker.<br><span class="site likely">MangaDex: likely</span></div>
+      <div class="fcard"><div class="k">2 · Drawing surface</div>Read the pixels of a <code>&lt;canvas&gt;</code>, but only if the site allows it.<br><span class="site">MangaDex: maybe</span></div>
+      <div class="fcard"><div class="k">3 · Screenshot crop</div>Screenshot the visible tab and crop it to the page. Works anywhere, but can't translate ahead.<br><span class="site likely">Shonen Jump+: likely (its viewer scrambles images)</span></div>
+    </div>
+  </section>
+
+  <section class="decide">
+    <h2>✓ Decided: page spinner now, per-bubble later</h2>
+    <p style="margin:0">InkSwap doesn't know where the bubbles are until Claude answers, so the proof of concept uses <b>A</b>. You'll try <b>B</b> as a stretch once the demo works.</p>
+    <div class="opts">
+      <div class="opt" style="border-color:var(--accent)"><h3>A · Page spinner (building now)</h3>One spinner over the whole page until the translations land. Simple and low-risk.
+        <div class="mini"><div class="mb" style="left:55%;top:10%;width:30%;height:45%"></div><div class="mb" style="left:10%;top:50%;width:28%;height:38%"></div><div class="bigspin"><div class="spin"></div></div></div></div>
+      <div class="opt"><h3>B · Per-bubble (post-demo stretch)</h3><b>Stream</b> Claude's answer with all bubble boxes first, so spinners appear on each bubble within seconds and translations fill in after. More code and more risk in a 2–4 hour build.
+        <div class="mini"><div class="mb" style="left:55%;top:10%;width:30%;height:45%"><div class="spin"></div></div><div class="mb" style="left:10%;top:50%;width:28%;height:38%"><div class="spin"></div></div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Components</h2>
+    <p class="note" style="margin-top:-4px">Each one links back to the PRD behavior it implements and the file it lives in.</p>
+    <details open><summary><span class="dot"></span>Popup<code>entrypoints/popup/</code></summary><div class="body">
+      <span class="prd">Switching On for a Tab</span><span class="prd">Settings</span><span class="prd">Turning Off</span>
+      <ul><li>Wordmark, "On for this tab" toggle, language, opacity 0.5–1.0 (default 0.95), chime, toasts, masked key field</li><li>No key → toggle disabled with the hint "Paste your Claude API key to start"</li></ul></div></details>
+    <details><summary><span class="dot"></span>Background worker<code>entrypoints/background.ts</code></summary><div class="body">
+      <span class="prd">Switching On for a Tab</span><span class="prd">Staying On Across Chapters</span><span class="prd">Loading Feedback</span>
+      <ul><li>Tab on/off state, cleared when the tab closes</li><li>Right-click "Translate this page"</li><li>Calls Claude, max 2 at once per tab</li><li>Screenshot capture, and the chime through an offscreen page (Chrome blocks page audio without a click)</li></ul></div></details>
+    <details><summary><span class="dot"></span>Translator + Translation Prompt<code>lib/translate.ts · lib/prompt.ts</code></summary><div class="body">
+      <span class="prd">Bubble Translation and Overlay</span>
+      <ul><li><code>translatePage(image, language, key)</code> → bubbles, checked against the zod schema</li><li><b>You write the prompt's first draft</b> at the translation step, while looking at a real raw page. Then we test and sharpen it. This is your prompting practice.</li></ul></div></details>
+    <details><summary><span class="dot"></span>Page Finder<code>lib/finder.ts</code></summary><div class="body">
+      <span class="prd">Bubble Translation and Overlay</span><span class="prd">Staying On Across Chapters</span>
+      <ul><li>Finds <code>&lt;img&gt;</code> / <code>&lt;canvas&gt;</code> pages ≥ ~300px wide</li><li>IntersectionObserver notices pages scrolling into view</li><li>Detects address changes, which is how MangaDex switches chapters without reloading</li></ul></div></details>
+    <details><summary><span class="dot"></span>Page Capture<code>lib/capture.ts</code></summary><div class="body">
+      <span class="prd">Bubble Translation and Overlay</span>
+      <ul><li>Direct image → canvas → screenshot crop</li><li>JPEG with the long edge ≤ 1568px to keep cost and wait down</li></ul></div></details>
+    <details><summary><span class="dot"></span>Overlay Renderer<code>lib/overlay.ts · lib/geometry.ts</code></summary><div class="body">
+      <span class="prd">Bubble Translation and Overlay</span><span class="prd">Loading Feedback</span><span class="prd">When Translation Fails</span><span class="prd">Settings</span>
+      <ul><li>Shadow root keeps the site's styles and InkSwap's from clashing</li><li>Converts 0–1000 boxes to pixels, and shrinks the text until it fits</li><li><code>--inkswap-opacity</code> CSS variable updates live</li><li>Failed page → raw + "↻ Retry" pill top-right</li></ul></div></details>
+    <details><summary><span class="dot"></span>Toasts<code>lib/toast.ts</code></summary><div class="body">
+      <span class="prd">Loading Feedback</span>
+      <div class="pill-toast" style="margin:6px 0 8px"><i>✓</i>Page translated</div>
+      <ul><li>First page after switching on: toast + chime</li><li>First page of each later chapter: toast only</li><li>Never one toast per page. The error toast has a Retry button.</li></ul></div></details>
+    <details><summary><span class="dot"></span>Language Switch Handling<code>entrypoints/content/index.ts</code></summary><div class="body">
+      <span class="prd">Changing Language Mid-Chapter</span>
+      <ul><li>Retranslates the current chapter, visible page first</li><li>Later chapters use the new language</li></ul></div></details>
+  </section>
+
+  <section>
+    <h2>Where data lives</h2>
+    <table>
+      <tr><th>Data</th><th>Where</th><th>Leave &amp; come back</th></tr>
+      <tr><td>Language, opacity, chime, toasts</td><td><code>chrome.storage.local</code></td><td>Remembered</td></tr>
+      <tr><td>Claude API key</td><td><code>chrome.storage.local</code></td><td>Remembered. Never in code, never synced.</td></tr>
+      <tr><td>Which tabs are on</td><td><code>chrome.storage.session</code></td><td>Lasts for the tab, across chapters</td></tr>
+      <tr><td>Page bubbles &amp; status</td><td>Page-helper memory</td><td>Gone on reload (no caching yet)</td></tr>
+    </table>
+    <p style="margin:16px 0 6px"><b>What Claude returns</b> (enforced by zod):</p>
+<pre>{ bubbles: [{
+    box: { x, y, w, h },     // 0–1000, relative to the page image
+    source: "どうやって家に入った？",
+    translation: "How did you get into my house?",
+    readable: true           // false → leave the bubble raw
+}] }</pre>
+  </section>
+
+  <section>
+    <h2>Look and feel</h2>
+    <p style="margin:0 0 8px"><span class="swatch" style="background:#e055c4"></span><span class="swatch" style="background:#b183f0"></span><span class="swatch" style="background:#18151d"></span><span class="swatch" style="background:#f6f3f8"></span> Magenta → purple accent. The theme follows the system: Crunchyroll-style dark, or a soft light version.</p>
+    <p style="font-family:var(--hand);font-size:24px;font-weight:700;margin:8px 0">How did you get into my house?!</p>
+    <p class="note">Bubble text uses <b>Shantell Sans</b> (hand-lettered, with Spanish and French accents), and the wordmark uses <b>Bangers</b>. Both are free to bundle. Borders are uniform or absent, <b>never one-sided</b>.</p>
+  </section>
+
+  <section>
+    <h2>File structure</h2>
+<pre>build-with-ai/
+├── entrypoints/
+│   ├── background.ts        # brain: tab state, right-click, Claude, screenshots, chime
+│   ├── content/index.ts     # page helper: wires finder + overlay + toasts
+│   ├── popup/               # index.html · main.ts · style.css
+│   └── offscreen/           # hidden page that plays the chime
+├── lib/
+│   ├── translate.ts         # Claude call + zod schema
+│   ├── prompt.ts            # YOUR translation prompt
+│   ├── capture.ts           # image → canvas → screenshot
+│   ├── finder.ts            # find pages, watch scroll, chapter change
+│   ├── overlay.ts           # spinner, bubble labels, text fit, retry
+│   ├── toast.ts · settings.ts · messages.ts
+│   └── geometry.ts          # box math (unit-tested)
+├── assets/overlay.css       # shadow-root styles
+├── public/fonts/ · public/icon/
+├── tests/geometry.test.ts
+├── wxt.config.ts            # manifest + permissions
+└── README.md                # load-unpacked steps + bring your own key</pre>
+  </section>
+
+  <section>
+    <h2>Run it &amp; demo it</h2>
+    <ul>
+      <li><b>Develop:</b> <code>npm install</code> → <code>npm run dev</code> (WXT opens Chrome with InkSwap loaded)</li>
+      <li><b>Try it like a stranger:</b> <code>npm run build</code> → <code>chrome://extensions</code> → Developer mode → Load unpacked → <code>.output/chrome-mv3</code></li>
+      <li><b>Demo video:</b> right-click → Translate, the spinner, the page landing with the chime and toast, the next page, then a switch to Spanish. Show only a few pages.</li>
+      <li><b>No deployment.</b> The public repo plus the video are the submission.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Where it could break</h2>
+    <table>
+      <tr><th>What breaks</th><th>Fallback</th></tr>
+      <tr><td>Bubble boxes slightly off</td><td>Padding and rounding first. Add the snap-to-white-bubble step if testing shows misalignment.</td></tr>
+      <tr><td>Site blocks reading images</td><td>Screenshot crop. If that also fails, demo on the other site.</td></tr>
+      <tr><td>Claude call fails (network, key, refusal, timeout)</td><td>Raw page + error toast with Retry + "↻ Retry" pill</td></tr>
+      <tr><td>No key, switched on by right-click</td><td>Toast: "Paste your Claude API key in InkSwap settings to start"</td></tr>
+      <tr><td>Page with no bubbles</td><td>Nothing drawn, no error</td></tr>
+    </table>
+  </section>
+
+  <p class="foot">Companion to <code>devpost/spec.md</code>, which is the source of truth.</p>
+</main>
+<script>
+  const STEPS = [
+    { t: 'You open a raw chapter. The page helper asks the background worker "is this tab on?" It isn\'t, so nothing changes.', n: ['n-page','n-bg'], e: ['e-page-bg'], r: 'prd › States and Boundaries → Off' },
+    { t: 'You flip the popup toggle, or right-click "Translate this page." The background worker records the tab as on, in English, in chrome.storage.', n: ['n-pop','n-bg','n-store'], e: ['e-pop-bg','e-bg-store'], r: 'prd › Switching On for a Tab' },
+    { t: 'A page scrolls into view. The page helper shows the loading spinner and captures the page picture: direct image, canvas, or screenshot.', n: ['n-page','n-bg'], e: ['e-page-bg'], r: 'Page Finder · Page Capture' },
+    { t: 'The background worker sends the image, your prompt, and the target language to Claude Sonnet 5.5, and gets back a strict JSON list of bubble boxes and translations.', n: ['n-bg','n-claude'], e: ['e-bg-claude'], r: 'Translator · prd › Bubble Translation and Overlay' },
+    { t: 'The page helper draws a hand-lettered label at 0.95 opacity over each readable bubble. For the first page, it plays the chime and shows a toast.', n: ['n-page','n-bg'], e: ['e-page-bg'], r: 'Overlay Renderer · Toasts · prd › Loading Feedback' },
+    { t: 'Next chapter in the same tab: the tab is still marked on, so translation continues. One toast per chapter.', n: ['n-page','n-bg','n-store'], e: ['e-page-bg','e-bg-store'], r: 'prd › Staying On Across Chapters' },
+    { t: 'You switch to Spanish in the popup. The setting changes, and the page helper retranslates the current chapter, visible page first.', n: ['n-pop','n-store','n-page','n-bg','n-claude'], e: ['e-pop-store','e-page-bg','e-bg-claude'], r: 'Language Switch Handling · prd › Changing Language Mid-Chapter' },
+  ];
+  let i = 0;
+  const dots = document.getElementById('dots');
+  dots.innerHTML = STEPS.map((_, n) => `<i data-n="${n}"></i>`).join('');
+  function render() {
+    const s = STEPS[i];
+    document.getElementById('snum').textContent = 'STEP ' + (i + 1);
+    document.getElementById('stext').textContent = s.t;
+    document.getElementById('srefs').textContent = s.r;
+    document.querySelectorAll('.arch .n').forEach(g => g.classList.toggle('hot', s.n.includes(g.id)));
+    document.querySelectorAll('.arch .e').forEach(p => p.classList.toggle('hot', s.e.includes(p.id)));
+    dots.querySelectorAll('i').forEach((d, n) => d.classList.toggle('on', n === i));
+  }
+  document.getElementById('next').onclick = () => { i = (i + 1) % STEPS.length; render(); };
+  document.getElementById('prev').onclick = () => { i = (i - 1 + STEPS.length) % STEPS.length; render(); };
+  dots.onclick = e => { if (e.target.dataset.n) { i = +e.target.dataset.n; render(); } };
+  document.getElementById('theme').onclick = () => {
+    const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    r.dataset.theme = dark ? 'light' : 'dark';
+  };
+  render();
+</script>
+</body>
+</html>

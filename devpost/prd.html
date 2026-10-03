@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InkSwap Product Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f3f8; --panel: #ffffff; --panel-2: #f1ecf5; --line: #e0d6e8;
+    --text: #1d1a22; --muted: #6c6478; --accent: #c13fa8; --accent-2: #9b5de5;
+    --accent-soft: rgba(193,63,168,.10); --good: #15803d; --bad: #dc2626;
+    --paper: #f4f1ea; --ink: #16161a;
+    --hand: "Patrick Hand", "Comic Sans MS", "Chalkboard SE", cursive;
+    --display: "Bangers", "Impact", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #0f0d12; --panel: #18151d; --panel-2: #221e29; --line: #2f2938;
+    --text: #efeaf3; --muted: #a59bb2; --accent: #e055c4; --accent-2: #b183f0;
+    --accent-soft: rgba(224,85,196,.14); --good: #4ade80; --bad: #f87171;
+  } }
+  :root[data-theme="dark"] {
+    --bg: #0f0d12; --panel: #18151d; --panel-2: #221e29; --line: #2f2938;
+    --text: #efeaf3; --muted: #a59bb2; --accent: #e055c4; --accent-2: #b183f0;
+    --accent-soft: rgba(224,85,196,.14); --good: #4ade80; --bad: #f87171;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
+  main { max-width: 1000px; margin: 0 auto; padding: 44px 16px 80px; }
+  .tag { display: inline-block; font-size: 12px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 2px 10px; }
+  h1 { font-family: var(--display); font-weight: 400; letter-spacing: .03em; font-size: clamp(44px, 8vw, 72px);
+    line-height: 1; margin: 14px 0 8px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  h2 { font-size: 22px; margin: 0 0 14px; }
+  .lede { color: var(--muted); font-size: 18px; max-width: 740px; margin: 0; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 24px; margin-top: 24px; }
+  .note { font-size: 13px; color: var(--muted); }
+  /* expansion */
+  .grow { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: center; }
+  @media (max-width: 720px) { .grow { grid-template-columns: 1fr; } .grow .arrow { transform: rotate(90deg); justify-self: center; } }
+  .card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .label { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 4px; }
+  .arrow { color: var(--accent); font-size: 28px; font-weight: 700; }
+  /* stepper */
+  .stage { display: grid; grid-template-columns: 1fr 300px; gap: 22px; align-items: start; }
+  @media (max-width: 760px) { .stage { grid-template-columns: 1fr; } }
+  .browser { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; position: relative; }
+  .chrome { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+  .chrome .url { flex: 1; background: var(--panel); border-radius: 999px; padding: 3px 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ext { width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; font-family: var(--display);
+    background: var(--panel); border: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  .ext.on { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border-color: transparent; }
+  .viewport { position: relative; padding: 18px; display: grid; place-items: center; min-height: 420px; }
+  .page { position: relative; background: var(--paper); border-radius: 6px; aspect-ratio: 3/4; width: min(300px, 100%); box-shadow: 0 10px 30px rgba(0,0,0,.25); overflow: hidden; }
+  .pl { position: absolute; border: 3px solid var(--ink); }
+  .bubble { position: absolute; background: #fff; border: 2.5px solid var(--ink); border-radius: 50%; display: grid; place-items: center; overflow: hidden; }
+  .jp { writing-mode: vertical-rl; font-size: 14px; color: var(--ink); font-weight: 700; line-height: 1.3; }
+  .ov { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 14%;
+    background: rgba(255,255,255,.95); color: var(--ink); font-family: var(--hand); font-size: 17px; line-height: 1.1;
+    opacity: 0; transition: opacity .35s; }
+  .spin { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(255,255,255,.7); opacity: 0; transition: opacity .25s; }
+  .spin i { width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--accent-soft); border-top-color: var(--accent); animation: r .8s linear infinite; }
+  @keyframes r { to { transform: rotate(360deg); } }
+  .page[data-s="loading"] .spin { opacity: 1; }
+  .page[data-s="done"] .ov { opacity: 1; }
+  .retry { position: absolute; right: 10px; bottom: 10px; background: var(--panel); color: var(--text); border: 1px solid var(--bad);
+    border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 700; opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .page[data-s="fail"] .retry { opacity: 1; }
+  .retry-q { position: absolute; right: 10px; bottom: 40px; font-size: 11px; color: var(--bad); opacity: 0; }
+  .page[data-s="fail"] .retry-q { opacity: 1; }
+  .toast { position: absolute; left: 50%; top: 14px; transform: translate(-50%, -12px); background: var(--panel); color: var(--text);
+    border: 1px solid var(--accent); border-radius: 999px; padding: 7px 14px 7px 8px; font-size: 14px; display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.25), 0 0 0 4px var(--accent-soft); opacity: 0; transition: .3s; white-space: nowrap; z-index: 5; }
+  .toast::before { content: "✓"; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; font-size: 12px; font-weight: 700; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.err { border-color: var(--bad); box-shadow: 0 8px 24px rgba(0,0,0,.25), 0 0 0 4px rgba(248,113,113,.15); }
+  .toast.err::before { content: "!"; background: var(--bad); }
+  .popup { position: absolute; right: 10px; top: 44px; width: 220px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 12px; padding: 12px; box-shadow: 0 12px 30px rgba(0,0,0,.3); font-size: 13px; z-index: 6; display: none; }
+  .popup.show { display: block; }
+  .popup .brand { font-family: var(--display); font-size: 22px; letter-spacing: .04em; color: var(--accent); }
+  .row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); }
+  .sw { width: 34px; height: 18px; border-radius: 999px; background: var(--line); position: relative; }
+  .sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: .2s; }
+  .sw.on { background: var(--accent); } .sw.on::after { left: 18px; }
+  .ctx { position: absolute; left: 40%; top: 45%; background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    font-size: 13px; padding: 4px 0; box-shadow: 0 10px 24px rgba(0,0,0,.3); display: none; z-index: 6; min-width: 190px; }
+  .ctx.show { display: block; }
+  .ctx div { padding: 5px 14px; color: var(--muted); } .ctx .hl { background: var(--accent); color: #fff; font-weight: 700; }
+  .chime { position: absolute; left: 12px; bottom: 12px; font-size: 13px; color: var(--accent); font-weight: 700; opacity: 0; transition: .3s; }
+  .chime.show { opacity: 1; }
+  .steps { list-style: none; margin: 0; padding: 0; }
+  .steps li { padding: 10px 12px; border-radius: 10px; cursor: pointer; color: var(--muted); border: 1px solid transparent; display: flex; gap: 10px; }
+  .steps li b { color: var(--accent); min-width: 18px; }
+  .steps li.cur { color: var(--text); background: var(--accent-soft); border-color: var(--accent); }
+  .nav { display: flex; gap: 8px; margin-top: 12px; }
+  .nav button, .tabs button { flex: 1; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 10px; padding: 9px; font-weight: 700; cursor: pointer; }
+  .nav button.pri { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border: 0; }
+  .tabs { display: flex; gap: 8px; margin: 10px 0 0; flex-wrap: wrap; }
+  .tabs button.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  details { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; margin-top: 10px; }
+  summary { cursor: pointer; padding: 13px 16px; font-weight: 700; list-style: none; display: flex; gap: 10px; align-items: center; }
+  summary::-webkit-details-marker { display: none; }
+  summary .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); flex: none; }
+  summary .count { margin-left: auto; color: var(--muted); font-weight: 500; font-size: 13px; }
+  details .body { padding: 0 18px 14px 36px; }
+  details ul { margin: 0; padding-left: 18px; } details li { margin: 5px 0; }
+  .src { font-size: 12px; color: var(--muted); margin: 0 0 6px; }
+  .ck li { list-style: none; position: relative; } .ck li::before { content: "☐"; position: absolute; left: -20px; color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td, th { text-align: left; padding: 9px 10px; border-top: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; border-top: 0; }
+  .swatches { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .swatch { flex: 1; min-width: 140px; border-radius: 12px; padding: 14px; color: #fff; font-weight: 700; }
+  .handdemo { font-family: var(--hand); font-size: 26px; }
+  .open { border-color: var(--accent-2); }
+  .foot { color: var(--muted); font-size: 13px; margin-top: 28px; text-align: center; }
+  .themebtn { float: right; border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 999px; padding: 4px 12px; cursor: pointer; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <button class="themebtn" id="theme">Toggle light/dark</button>
+  <span class="tag">PRD · approved</span>
+  <h1>InkSwap</h1>
+  <p class="lede">A browser extension for raw-manga readers. Switch it on for a tab, and every speech bubble gets covered by a natural, meaning-first translation in hand-lettered comic text.</p>
+
+  <section>
+    <h2>Scope sketch → product</h2>
+    <div class="grow">
+      <div class="card"><div class="label">Scope said</div>“Translates automatically as pages scroll into view.”</div>
+      <div class="arrow">→</div>
+      <div class="card"><div class="label">Now we know</div>The reader switches it on <b>per tab</b> from the popup or right-click. It <b>stays on across chapters</b>, shows <b>loading indicators on each bubble</b>, chimes once on the first page, and shows <b>one toast per chapter</b> after that.</div>
+    </div>
+    <div class="grow" style="margin-top:12px">
+      <div class="card"><div class="label">Scope said</div>“Simple settings.”</div>
+      <div class="arrow">→</div>
+      <div class="card"><div class="label">Now we know</div>Toggle, language, opacity, and chime/toast preferences. Changing the language <b>retranslates only the current chapter</b>, and turning it off <b>keeps finished translations</b>.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Walk the core journey</h2>
+    <div class="stage">
+      <div class="browser">
+        <div class="chrome"><span>●●●</span><span class="url" id="url">raw-manga-site.example / chapter-12</span><span class="ext" id="ext">I</span></div>
+        <div class="viewport">
+          <div class="toast" id="toast"></div>
+          <div class="popup" id="popup">
+            <div class="brand">InkSwap</div>
+            <div class="row"><span>On for this tab</span><span class="sw" id="psw"></span></div>
+            <div class="row"><span>Language</span><b>English</b></div>
+            <div class="row"><span>Opacity</span><b>0.95</b></div>
+            <div class="row"><span>Chime</span><span class="sw on"></span></div>
+            <div class="row"><span>Toasts</span><span class="sw on"></span></div>
+          </div>
+          <div class="ctx" id="ctx"><div>Back</div><div>Reload</div><div class="hl">Translate this page · InkSwap</div><div>Inspect</div></div>
+          <div class="page" id="page" data-s="raw">
+            <div class="pl" style="left:4%;top:3%;width:92%;height:46%"></div>
+            <div class="pl" style="left:4%;top:52%;width:44%;height:45%"></div>
+            <div class="pl" style="left:52%;top:52%;width:44%;height:45%"></div>
+            <div class="bubble" style="left:50%;top:7%;width:40%;height:35%"><span class="jp">どうやって<br>家に入った？</span><div class="spin"><i></i></div><div class="ov">How did you get into my house?</div></div>
+            <div class="bubble" style="left:10%;top:58%;width:33%;height:27%"><span class="jp">ラゴスに<br>住んでる</span><div class="spin"><i></i></div><div class="ov">I live in Lagos.</div></div>
+            <div class="bubble" style="left:58%;top:62%;width:32%;height:24%"><span class="jp">マジか</span><div class="spin"><i></i></div><div class="ov">No way.</div></div>
+            <div class="retry-q">Retry button placement: open question</div>
+            <button class="retry" tabindex="-1">↻ Retry page</button>
+          </div>
+          <div class="chime" id="chime">♪ chime</div>
+        </div>
+      </div>
+      <div>
+        <ol class="steps" id="steps"></ol>
+        <div class="nav"><button id="prev">← Back</button><button class="pri" id="next">Next →</button></div>
+        <div class="tabs" id="alt">
+          <button data-x="fail">Show: page fails</button>
+          <button data-x="ctx">Show: right-click route</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Features and behavior</h2>
+    <p class="note" style="margin-top:-6px">Each area lists the checks we'll use during the build to confirm it works.</p>
+    <details open><summary><span class="dot"></span>Switching on for a tab<span class="count">4 checks</span></summary><div class="body">
+      <p class="src">Why: always-on wastes AI credits and gets in the way</p>
+      <ul class="ck"><li>Installed but off → the chapter looks unchanged</li><li>Popup toggle on → pages on that tab start translating</li><li>Right-click “Translate this page” → same effect</li><li>Popup shows “on” whichever route was used</li></ul></div></details>
+    <details><summary><span class="dot"></span>Staying on across chapters<span class="count">2 checks</span></summary><div class="body">
+      <ul class="ck"><li>Next chapter in the same tab translates with no action</li><li>Other tabs are unaffected</li></ul></div></details>
+    <details><summary><span class="dot"></span>Bubble translation and overlay<span class="count">4 checks</span></summary><div class="body">
+      <p class="src">Develops scope › The Unique Kernel</p>
+      <ul class="ck"><li>Each bubble gets its own translation, placed over it</li><li>Reads naturally, by meaning: “How did you get the other way?” → “How did you get into my house?”</li><li>Fully covers the original at 0.95 by default, in a hand-lettered font, fitted to the bubble</li><li>Translates on scroll-in, and may pre-translate pages just ahead</li></ul></div></details>
+    <details><summary><span class="dot"></span>Loading feedback<span class="count">5 checks</span></summary><div class="body">
+      <ul class="ck"><li>Loading indicator on each bubble while translating</li><li>Indicators are replaced by the translation</li><li>First page: chime + toast</li><li>After that: one toast per chapter, never per page</li><li>Chime and toasts can each be turned off</li></ul></div></details>
+    <details><summary><span class="dot"></span>Settings<span class="count">3 checks</span></summary><div class="body">
+      <ul class="ck"><li>Language: phase one English only, then Spanish and French for the demo</li><li>Opacity slider (default 0.95) updates translated bubbles live</li><li>Chime on/off and toasts on/off</li></ul></div></details>
+    <details><summary><span class="dot"></span>Changing language mid-chapter<span class="count">3 checks</span></summary><div class="body">
+      <ul class="ck"><li>Current chapter is retranslated into the new language</li><li>Earlier chapters keep their language</li><li>Later chapters use the new language</li></ul></div></details>
+    <details><summary><span class="dot"></span>Turning off<span class="count">2 checks</span></summary><div class="body">
+      <ul class="ck"><li>No new pages are translated</li><li>Already-translated pages keep their translations</li></ul></div></details>
+    <details><summary><span class="dot" style="background:var(--bad)"></span>When translation fails<span class="count">3 checks</span></summary><div class="body">
+      <ul class="ck"><li>Failed page → raw bubbles + error toast + retry</li><li>Retry → translates like any page on success</li><li>One unreadable bubble stays raw, and the rest of the page still translates</li></ul></div></details>
+  </section>
+
+  <section>
+    <h2>Look and feel</h2>
+    <div class="swatches">
+      <div class="swatch" style="background:#e055c4">Magenta</div>
+      <div class="swatch" style="background:linear-gradient(135deg,#e055c4,#b183f0)">Accent range</div>
+      <div class="swatch" style="background:#b183f0">Mid-tone purple</div>
+      <div class="swatch" style="background:#18151d;border:1px solid var(--line)">Dark, Crunchyroll-inspired</div>
+    </div>
+    <p style="margin:16px 0 4px"><b>Rule:</b> never color only one side of a border. Borders are uniform all the way around or absent, toasts included.</p>
+    <p style="margin:8px 0 4px">Bubble lettering is hand-lettered comic, not a plain font. Example:</p>
+    <div class="card handdemo">How did you get into my house?!</div>
+    <p class="note">This page follows your system theme, just like InkSwap will. Try the toggle at the top. The fonts here are only placeholders, and <code>4-spec</code> picks the real ones.</p>
+  </section>
+
+  <section>
+    <h2>States</h2>
+    <table>
+      <tr><th>State</th><th>What the reader sees</th></tr>
+      <tr><td>Off (default)</td><td>The site, exactly as normal</td></tr>
+      <tr><td>Translating</td><td>Loading indicators on the bubbles of pages in view</td></tr>
+      <tr><td>Translated</td><td>Translated bubbles, plus chime + toast on the first page and one toast per chapter after</td></tr>
+      <tr><td>Failed page</td><td>Raw bubbles, error toast, retry</td></tr>
+      <tr><td>No bubbles <span class="note">(assumption)</span></td><td>Left alone, with no error</td></tr>
+      <tr><td>Switched off</td><td>Existing translations stay, and new pages stay raw</td></tr>
+      <tr><td>Remembered <span class="note">(assumption)</span></td><td>Language, opacity, chime, and toast preferences between sessions</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Boundary</h2>
+    <details><summary><span class="dot" style="background:var(--accent-2)"></span>Deferred from the PoC<span class="count">3</span></summary><div class="body"><ul>
+      <li><b>Waiting-room mini-game / jokes / comedic panels:</b> a separate project that doesn't prove translation works</li>
+      <li><b>Many manga sites:</b> one or two first</li>
+      <li><b>Translation caching</b></li></ul></div></details>
+    <details><summary><span class="dot" style="background:var(--muted)"></span>Later enhancements<span class="count">4</span></summary><div class="body"><ul>
+      <li>Curved text and matching each bubble's lettering</li><li>Sound effects and text outside bubbles</li><li>Korean, Chinese, and more target languages</li><li>Fully polished settings</li></ul></div></details>
+    <details><summary><span class="dot" style="background:var(--bad)"></span>Non-goals<span class="count">3</span></summary><div class="body"><ul>
+      <li>Whole-story memory across chapters</li><li>Always-on translation</li><li>Standalone reader site</li></ul></div></details>
+  </section>
+
+  <section class="open">
+    <h2>Open questions</h2>
+    <ul>
+      <li><b>Where the retry option sits</b> on a failed page (a button on the page, or in the toast?). Doesn't block approval and can be settled in spec/build.</li>    </ul>
+  </section>
+
+  <p class="foot">Companion to <code>devpost/prd.md</code>, which is the source of truth.</p>
+</main>
+<script>
+  const STEPS = [
+    { t: 'Open a raw chapter. InkSwap is off, so nothing changes.', s: 'raw' },
+    { t: 'Click the InkSwap icon and flip “On for this tab.”', s: 'raw', popup: true },
+    { t: 'The page scrolls into view, and each bubble shows a loading indicator.', s: 'loading', on: true },
+    { t: 'First page done: translations appear, plus a chime and toast.', s: 'done', on: true, toast: 'Page translated · English', chime: true },
+    { t: 'Keep scrolling: later pages translate quietly, with no toast per page.', s: 'done', on: true },
+    { t: 'Next chapter in the same tab: still on, one toast for the chapter.', s: 'done', on: true, toast: 'Chapter 13 translated', url: 'chapter-13' },
+  ];
+  const $ = id => document.getElementById(id);
+  const page = $('page'), toast = $('toast'), popup = $('popup'), ext = $('ext'), chime = $('chime'), ctx = $('ctx'), url = $('url'), psw = $('psw');
+  let i = 0;
+  $('steps').innerHTML = STEPS.map((s, n) => `<li data-n="${n}"><b>${n + 1}</b><span>${s.t}</span></li>`).join('');
+  function reset() { popup.classList.remove('show'); ctx.classList.remove('show'); toast.className = 'toast'; chime.classList.remove('show'); }
+  function render() {
+    const s = STEPS[i]; reset();
+    page.dataset.s = s.s; ext.classList.toggle('on', !!s.on || !!s.popup); psw.classList.toggle('on', !!s.popup || !!s.on);
+    url.textContent = 'raw-manga-site.example / ' + (s.url || 'chapter-12');
+    if (s.popup) popup.classList.add('show');
+    if (s.toast) { toast.textContent = s.toast; requestAnimationFrame(() => toast.classList.add('show')); }
+    if (s.chime) chime.classList.add('show');
+    document.querySelectorAll('#steps li').forEach((li, n) => li.classList.toggle('cur', n === i));
+    document.querySelectorAll('#alt button').forEach(b => b.classList.remove('on'));
+  }
+  $('next').onclick = () => { i = Math.min(i + 1, STEPS.length - 1); render(); };
+  $('prev').onclick = () => { i = Math.max(i - 1, 0); render(); };
+  $('steps').onclick = e => { const li = e.target.closest('li'); if (li) { i = +li.dataset.n; render(); } };
+  document.querySelectorAll('#alt button').forEach(b => b.onclick = () => {
+    reset(); document.querySelectorAll('#steps li').forEach(li => li.classList.remove('cur'));
+    document.querySelectorAll('#alt button').forEach(x => x.classList.toggle('on', x === b));
+    if (b.dataset.x === 'fail') { page.dataset.s = 'fail'; ext.classList.add('on'); toast.textContent = 'Couldn’t translate this page'; toast.classList.add('err'); requestAnimationFrame(() => toast.classList.add('show')); }
+    else { page.dataset.s = 'raw'; ext.classList.remove('on'); ctx.classList.add('show'); }
+  });
+  $('theme').onclick = () => {
+    const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    r.dataset.theme = dark ? 'light' : 'dark';
+  };
+  render();
+</script>
+</body>
+</html>

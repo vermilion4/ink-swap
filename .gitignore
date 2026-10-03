@@ -1,0 +1,10 @@
+/devpost/learner-profile.md
+.env
+.env.*
+!.env.example
+
+# Dependencies and build output
+node_modules/
+.output/
+.wxt/
+shots/

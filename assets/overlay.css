@@ -1,0 +1,39 @@
+/* Styles inside InkSwap's shadow root. Borders are always uniform — never one side only. */
+
+:host {
+  all: initial;
+}
+
+.root {
+  --inkswap-accent-a: #e055c4;
+  --inkswap-accent-b: #b183f0;
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2147483646;
+}
+
+.page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  border-radius: 6px;
+  transition: box-shadow 0.3s ease;
+}
+
+.page[data-status='found'] {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--inkswap-accent-b) 45%, transparent);
+}
+
+.page[data-status='capturing'] {
+  box-shadow: 0 0 0 2px var(--inkswap-accent-a), 0 0 18px color-mix(in srgb, var(--inkswap-accent-a) 50%, transparent);
+}
+
+.page[data-status='captured'] {
+  box-shadow: 0 0 0 3px var(--inkswap-accent-b), 0 0 22px color-mix(in srgb, var(--inkswap-accent-b) 55%, transparent);
+}
+
+.page[data-status='failed'] {
+  box-shadow: 0 0 0 3px #ff5a6e;
+}

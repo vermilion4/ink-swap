@@ -1,0 +1,146 @@
+/* Popup look. Follows the system theme. Borders are uniform or absent — never one side only. */
+
+:root {
+  --bg: #f6f3f8;
+  --panel: #ffffff;
+  --text: #1d1a22;
+  --muted: #6b6475;
+  --line: #e4dde9;
+  --accent-a: #c13fa8;
+  --accent-b: #9b5de5;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f0d12;
+    --panel: #221e29;
+    --text: #efeaf3;
+    --muted: #a49cad;
+    --line: #2e2836;
+    --accent-a: #e055c4;
+    --accent-b: #b183f0;
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  width: 320px;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+main {
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.wordmark {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: 0.5px;
+  background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-weight: 600;
+}
+
+.hint {
+  margin: -6px 2px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.switch {
+  appearance: none;
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--line);
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin: 0;
+}
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  transition: transform 0.2s cubic-bezier(0.3, 1.4, 0.6, 1);
+}
+.switch:checked {
+  background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+}
+.switch:checked::after {
+  transform: translateX(18px);
+}
+.switch:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.key {
+  display: grid;
+  gap: 6px;
+}
+.key label {
+  font-size: 12px;
+  color: var(--muted);
+}
+.key-field {
+  display: flex;
+  gap: 8px;
+}
+.key-field input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+}
+.key-field input:focus {
+  outline: 2px solid var(--accent-b);
+  outline-offset: 1px;
+}
+.key-field button {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.saved {
+  margin: 0;
+  font-size: 12px;
+  color: var(--accent-b);
+}

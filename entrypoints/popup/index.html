@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InkSwap</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main>
+      <h1 class="wordmark">InkSwap</h1>
+
+      <label class="row toggle-row">
+        <span>On for this tab</span>
+        <input id="on" type="checkbox" role="switch" class="switch" disabled />
+      </label>
+      <p id="hint" class="hint">Paste your Claude API key to start.</p>
+
+      <section class="key">
+        <label for="key">Claude API key</label>
+        <div class="key-field">
+          <input id="key" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" />
+          <button id="save" type="button">Save</button>
+        </div>
+        <p id="saved" class="saved" hidden>Saved ✓</p>
+      </section>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
