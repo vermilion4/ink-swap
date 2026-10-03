@@ -107,4 +107,10 @@ saveBtn.addEventListener('click', async () => {
   setTimeout(() => (saved.hidden = true), 1800);
 });
 
+// Keep the toolbar icon matching the system's light/dark setting.
+void browser.runtime.sendMessage({
+  type: 'colorScheme',
+  dark: matchMedia('(prefers-color-scheme: dark)').matches,
+} satisfies Message);
+
 void init();

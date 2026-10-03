@@ -29,6 +29,8 @@ export type Message =
       width: number;
       height: number;
     }
+  // page helper / popup → background: the system is in dark (or light) mode, for the toolbar icon
+  | { type: 'colorScheme'; dark: boolean }
   // background → offscreen page: play the chime
   | { type: 'playChime' };
 

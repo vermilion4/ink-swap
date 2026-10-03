@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="5 10 117 117">
+  <!-- InkSwap icon (for dark backgrounds: magenta ink drop): an inked pen nib in the brand gradient, with a drop of ink at its tip.
+       Render the PNGs from this file with `node scripts/render-icons.mjs`. -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e055c4"/>
+      <stop offset="1" stop-color="#b183f0"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <g transform="rotate(45 64 64)" stroke="#1d1a22" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
+      <path transform="translate(5 5)" fill="#1d1a22" d="M46 14H82L90 50C90 66 78 84 64 114C50 84 38 66 38 50Z"/>
+      <path fill="url(#g)" d="M46 14H82L90 50C90 66 78 84 64 114C50 84 38 66 38 50Z"/>
+      <path fill="none" d="M42 30H86"/>
+      <path fill="none" d="M64 66V112"/>
+      <circle cx="64" cy="58" r="7" fill="#fff"/>
+    </g>
+    <path fill="#e055c4" d="M22 92c-7 10-11 16-11 22a11 11 0 0 0 22 0c0-6-4-12-11-22z"/>
+  </g>
+</svg>

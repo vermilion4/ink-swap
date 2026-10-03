@@ -156,6 +156,13 @@ export default defineContentScript({
       if (msg.type === 'tabStateChanged') apply(msg.state);
     });
 
+    // Tell the background worker whether the system is dark, so the toolbar icon matches.
+    const darkScheme = matchMedia('(prefers-color-scheme: dark)');
+    const reportScheme = () =>
+      void browser.runtime.sendMessage({ type: 'colorScheme', dark: darkScheme.matches } satisfies Message).catch(() => {});
+    reportScheme();
+    darkScheme.addEventListener('change', reportScheme);
+
     // Opacity follows the popup's slider live.
     overlay.setOpacity((await getPrefs()).opacity);
     browser.storage.onChanged.addListener((changes, area) => {

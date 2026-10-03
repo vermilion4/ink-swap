@@ -81,6 +81,10 @@ export default defineBackground(() => {
         getTabState(msg.tabId).then(sendResponse);
         return true;
 
+      case 'colorScheme':
+        void setToolbarIcon(msg.dark);
+        return false;
+
       case 'setLanguage':
         setLanguage(msg.tabId, msg.language).then(sendResponse);
         return true;
@@ -261,6 +265,21 @@ async function setLanguage(tabId: number | null, language: Language) {
   await setTabState(tabId, state);
   await browser.tabs.sendMessage(tabId, { type: 'tabStateChanged', state } satisfies Message).catch(() => {});
   return state;
+}
+
+/**
+ * The manifest's icons have a dark ink drop, for light toolbars. Chrome can't pick icons by
+ * theme on its own, so on a dark system the popup and page helpers report it and we switch to
+ * the set with a magenta drop.
+ */
+let darkIcon: boolean | null = null;
+async function setToolbarIcon(dark: boolean) {
+  if (dark === darkIcon) return;
+  darkIcon = dark;
+  const dir = dark ? 'icon-dark' : 'icon';
+  await browser.action.setIcon({
+    path: { 16: `/${dir}/16.png`, 32: `/${dir}/32.png`, 48: `/${dir}/48.png`, 128: `/${dir}/128.png` },
+  });
 }
 
 async function switchTab(tabId: number, on: boolean) {
