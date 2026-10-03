@@ -3,7 +3,7 @@ import type { Celebrate, DataUrlResponse, Message, TranslateResponse } from '@/l
 import { splitRegion } from '@/lib/bubbles';
 import { createLimiter } from '@/lib/limit';
 import { detectBubbles, loadBitmap, regionShape, squareImage, type PageBubbles } from '@/lib/pageimage';
-import { getApiKey, getPrefs, getTabState, setTabState } from '@/lib/settings';
+import { getApiKey, getPrefs, getTabState, setPrefs, setTabState, type Language } from '@/lib/settings';
 import { translatePage, TranslateError, type Bubble, type ReadBubble } from '@/lib/translate';
 
 // The last few captured pages and translations, kept for inspection while developing.
@@ -11,6 +11,7 @@ const recentCaptures: { pageId: string; method: string; dataUrl: string; at: num
 const recentTranslations: {
   pageId: string;
   ok: boolean;
+  language?: string;
   bubbles?: ReadBubble[];
   found?: number;
   marked?: string | null;
@@ -80,6 +81,10 @@ export default defineBackground(() => {
         getTabState(msg.tabId).then(sendResponse);
         return true;
 
+      case 'setLanguage':
+        setLanguage(msg.tabId, msg.language).then(sendResponse);
+        return true;
+
       case 'setTabOn':
         switchTab(msg.tabId, msg.on).then(sendResponse);
         return true;
@@ -141,7 +146,7 @@ async function translate(
       await getApiKey(),
     );
     const bubbles = await placeBubbles(result.bubbles, found);
-    remember(recentTranslations, { pageId, ok: true, ...result, found: found.regions.length, marked: marked && `data:image/jpeg;base64,${marked.base64}` });
+    remember(recentTranslations, { pageId, ok: true, language, ...result, found: found.regions.length, marked: marked && `data:image/jpeg;base64,${marked.base64}` });
     console.log(`[InkSwap] ${pageId}: ${result.bubbles.length} lines, ${found.regions.length} bubbles found, ${result.ms}ms, tokens`, result.usage);
     return { ok: true, bubbles, celebrate: null };
   } catch (e) {
@@ -243,10 +248,26 @@ function keepAlive() {
   };
 }
 
+/**
+ * Save the language for new tabs; if this tab is on, switch it too. Its page helper then
+ * retranslates the current chapter, and later chapters use the new language.
+ */
+async function setLanguage(tabId: number | null, language: Language) {
+  await setPrefs({ language });
+  if (tabId == null) return null;
+  const prev = await getTabState(tabId);
+  if (!prev?.on || prev.language === language) return prev;
+  const state = { ...prev, language };
+  await setTabState(tabId, state);
+  await browser.tabs.sendMessage(tabId, { type: 'tabStateChanged', state } satisfies Message).catch(() => {});
+  return state;
+}
+
 async function switchTab(tabId: number, on: boolean) {
   const prev = await getTabState(tabId);
   // Switching on afresh resets the chime and chapter toasts; switching on an already-on tab keeps them.
-  const state = on ? (prev?.on ? prev : { on: true, language: prev?.language ?? ('en' as const) }) : null;
+  const fresh = { on: true, language: (await getPrefs()).language };
+  const state = on ? (prev?.on ? prev : fresh) : null;
   await setTabState(tabId, state);
   await browser.tabs.sendMessage(tabId, { type: 'tabStateChanged', state } satisfies Message).catch(() => {});
   return state;

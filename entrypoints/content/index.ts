@@ -7,7 +7,7 @@ import { createFinder, type FoundPage } from '@/lib/finder';
 import type { Message, TranslateResponse } from '@/lib/messages';
 import { createOverlay } from '@/lib/overlay';
 import { snapBubbles } from '@/lib/snap';
-import { getPrefs, type TabState } from '@/lib/settings';
+import { getPrefs, PREFS, type Prefs, type TabState } from '@/lib/settings';
 import { createToaster, type ToastOptions } from '@/lib/toast';
 import type { TranslateFailure } from '@/lib/translate';
 
@@ -33,8 +33,12 @@ export default defineContentScript({
       },
     });
 
+    // Bumped on a language change, so answers still on their way in the old language are ignored.
+    let generation = 0;
+
     async function handlePage(page: FoundPage, ahead = false) {
       if (done.has(page.id) || !on) return;
+      const gen = generation;
       if (!ahead) {
         overlay.setStatus(page.id, page.el, 'found');
         await waitUntilStill(page.el);
@@ -61,8 +65,8 @@ export default defineContentScript({
         width: shot.width,
         height: shot.height,
       } satisfies Message)) as TranslateResponse;
-      // The reader may have swapped this element to another page while we waited.
-      if (replaced.has(page.id)) return;
+      // The reader may have swapped this element to another page while we waited, or changed language.
+      if (replaced.has(page.id) || gen !== generation) return;
       if (res.ok) {
         const bubbles = await snapBubbles(shot.dataUrl, res.bubbles).catch((e) => {
           console.warn('[InkSwap] snap step failed, using Claude boxes', e);
@@ -112,10 +116,32 @@ export default defineContentScript({
       if (on) console.log('[InkSwap] new chapter', now);
     }, 500);
 
+    /**
+     * Language changed: retranslate this chapter's pages (the reader removes earlier chapters'
+     * pages, so what's here is the current chapter). Visible pages first, then the rest in order.
+     */
+    function retranslateChapter() {
+      generation++;
+      const pages = [...finder.pages.values()].filter((p) => done.has(p.id) || failed.has(p.id));
+      const inView = (p: FoundPage) => {
+        const r = p.el.getBoundingClientRect();
+        return r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
+      };
+      const ordered = [...pages.filter(inView), ...pages.filter((p) => !inView(p))];
+      for (const page of ordered) {
+        done.delete(page.id);
+        failed.delete(page.id);
+        overlay.remove(page.id);
+        void handlePage(page, !inView(page));
+      }
+    }
+
     let language = 'en';
     function apply(state: TabState | null) {
+      const languageChanged = on && !!state?.on && state.language !== language;
       if (state) language = state.language;
       on = !!state?.on;
+      if (languageChanged) retranslateChapter();
       if (on) {
         overlay.mount();
         finder.start();
@@ -128,6 +154,13 @@ export default defineContentScript({
     browser.runtime.onMessage.addListener((raw) => {
       const msg = raw as Message;
       if (msg.type === 'tabStateChanged') apply(msg.state);
+    });
+
+    // Opacity follows the popup's slider live.
+    overlay.setOpacity((await getPrefs()).opacity);
+    browser.storage.onChanged.addListener((changes, area) => {
+      const next = changes[PREFS]?.newValue as Prefs | undefined;
+      if (area === 'local' && next?.opacity != null) overlay.setOpacity(next.opacity);
     });
 
     apply((await browser.runtime.sendMessage({ type: 'getTabState' } satisfies Message)) as TabState | null);

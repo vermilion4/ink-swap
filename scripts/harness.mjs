@@ -6,9 +6,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 
-export async function launch() {
+/** `profileDir`: reuse a browser profile (e.g. to check settings survive a restart). */
+export async function launch(profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'inkswap-'))) {
   const extPath = path.resolve('.output/chrome-mv3');
-  const context = await chromium.launchPersistentContext(fs.mkdtempSync(path.join(os.tmpdir(), 'inkswap-')), {
+  const context = await chromium.launchPersistentContext(profileDir, {
     channel: 'chromium',
     headless: !process.env.HEADED,
     viewport: { width: 1280, height: 900 },

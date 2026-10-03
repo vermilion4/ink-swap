@@ -13,13 +13,17 @@ export interface TabState {
   toastedChapters?: string[];
 }
 
-/** Reader preferences, remembered between sessions. The popup edits them (slice 5). */
+/** Reader preferences, remembered between sessions. The popup edits them. */
 export interface Prefs {
+  /** The language new tabs switch on with (and the current tab's, when changed in the popup). */
+  language: Language;
+  /** Label fill opacity, 0.5–1. */
+  opacity: number;
   chime: boolean;
   toasts: boolean;
 }
-const PREFS = 'prefs';
-const DEFAULT_PREFS: Prefs = { chime: true, toasts: true };
+export const PREFS = 'prefs';
+export const DEFAULT_PREFS: Prefs = { language: 'en', opacity: 0.95, chime: true, toasts: true };
 
 export async function getPrefs(): Promise<Prefs> {
   const res = await browser.storage.local.get(PREFS);

@@ -1,6 +1,6 @@
 // The messages the popup, background worker, and page helper send each other.
 
-import type { TabState } from './settings';
+import type { Language, TabState } from './settings';
 import type { Bubble, TranslateFailure } from './translate';
 
 export type Message =
@@ -8,6 +8,8 @@ export type Message =
   | { type: 'getTabState' }
   // popup → background: switch a tab on or off
   | { type: 'setTabOn'; tabId: number; on: boolean }
+  // popup → background: change the target language (saved, and applied to this tab if it's on)
+  | { type: 'setLanguage'; tabId: number | null; language: Language }
   // popup → background: state for a specific tab
   | { type: 'getTabStateFor'; tabId: number }
   // background → page helper: the tab's state changed

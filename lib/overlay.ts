@@ -84,6 +84,10 @@ export function createOverlay() {
       host.remove();
     },
     toastLayer,
+    /** Label fill opacity, applied live to every label already on the page. */
+    setOpacity(opacity: number) {
+      root.style.setProperty('--inkswap-opacity', String(opacity));
+    },
     setStatus(pageId: string, el: Element, status: PageStatus) {
       const { box } = layerFor(pageId, el);
       box.dataset.status = status;

@@ -1,13 +1,37 @@
-/* Popup look. Follows the system theme. Borders are uniform or absent — never one side only. */
+/* Popup look: a comic page. Thick uniform ink outlines, hard "pop" shadows, halftone dots,
+   hand-lettered text. Follows the system theme. Borders are uniform or absent — never one side only. */
+
+@font-face {
+  font-family: 'Bangers';
+  src: url('/fonts/bangers-latin.woff2') format('woff2');
+  font-display: block;
+}
+@font-face {
+  font-family: 'Shantell Sans';
+  src: url('/fonts/shantell-sans-latin.woff2') format('woff2');
+  font-weight: 300 800;
+  font-display: block;
+}
+@font-face {
+  font-family: 'Shantell Sans';
+  src: url('/fonts/shantell-sans-latin-ext.woff2') format('woff2');
+  font-weight: 300 800;
+  font-display: block;
+  unicode-range: U+0100-02BA, U+1E00-1E9F;
+}
 
 :root {
   --bg: #f6f3f8;
   --panel: #ffffff;
+  --sunken: #ece6f0;
   --text: #1d1a22;
-  --muted: #6b6475;
-  --line: #e4dde9;
+  --muted: #615a6b;
+  --ink: #1d1a22; /* outlines */
+  --pop: #1d1a22; /* hard offset shadows */
+  --dots: rgb(155 93 229 / 0.22);
   --accent-a: #c13fa8;
   --accent-b: #9b5de5;
+  --line: 2.5px;
   color-scheme: light;
 }
 
@@ -15,132 +39,422 @@
   :root {
     --bg: #0f0d12;
     --panel: #221e29;
+    --sunken: #18151d;
     --text: #efeaf3;
-    --muted: #a49cad;
-    --line: #2e2836;
+    --muted: #b3aabd;
+    /* Black ink would vanish on black, so lines turn light, like chalk on a dark panel. */
+    --ink: #efeaf3;
+    --pop: #e055c4;
+    --dots: rgb(224 85 196 / 0.2);
     --accent-a: #e055c4;
     --accent-b: #b183f0;
     color-scheme: dark;
   }
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
 body {
+  position: relative;
   margin: 0;
   width: 320px;
   background: var(--bg);
   color: var(--text);
-  font: 14px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font: 500 14px/1.35 'Shantell Sans', 'Comic Sans MS', system-ui, sans-serif;
+}
+
+/* Halftone dots behind the header, fading out down the page. */
+body::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 190px;
+  background: radial-gradient(circle, var(--dots) 1.3px, transparent 1.7px) 0 0 / 9px 9px;
+  -webkit-mask: linear-gradient(#000 20%, transparent);
+  mask: linear-gradient(#000 20%, transparent);
+  pointer-events: none;
 }
 
 main {
-  padding: 18px;
+  position: relative;
+  padding: 14px 18px 20px;
   display: grid;
-  gap: 14px;
+  gap: 18px;
 }
 
 .wordmark {
   margin: 0;
-  font-size: 28px;
-  letter-spacing: 0.5px;
-  background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+  font: 400 38px/1 'Bangers', system-ui, sans-serif;
+  letter-spacing: 1.5px;
+  background: linear-gradient(100deg, var(--accent-a), var(--accent-b));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  filter: drop-shadow(2px 2px 0 var(--pop));
+  transform: rotate(-2deg);
+  transform-origin: left;
+  width: max-content;
 }
 
-.row {
+/* Something you can press: inked outline and a hard shadow it sinks into when pressed. */
+.inked {
+  border: var(--line) solid var(--ink);
+  box-shadow: 3px 3px 0 var(--pop);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.inked:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--pop);
+}
+
+/* The power bubble: an inked speech bubble with a tail, filled with the gradient when on. */
+.power {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 14px 14px 14px 18px;
+  border: var(--line) solid var(--ink);
+  border-radius: 26px;
   background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 12px 14px;
-  font-weight: 600;
+  box-shadow: 4px 4px 0 var(--pop);
+  cursor: pointer;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+/* The tail: an ink triangle, with a fill triangle on top that also opens the outline where they join. */
+.power::before,
+.power::after {
+  content: '';
+  position: absolute;
+  clip-path: polygon(0 0, 100% 0, 12% 100%);
+}
+.power::before {
+  left: 30px;
+  bottom: -19px;
+  width: 28px;
+  height: 19px;
+  background: var(--ink);
+}
+.power::after {
+  left: 33.5px;
+  bottom: -12.5px;
+  width: 20px;
+  height: 13px;
+  background: var(--panel);
+  transition: background 0.25s ease;
+}
+.power-text {
+  display: grid;
+  gap: 2px;
+}
+.power-text strong {
+  font: 400 21px/1 'Bangers', system-ui, sans-serif;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+}
+#power-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+.power.is-on {
+  background: linear-gradient(100deg, var(--accent-a), var(--accent-b));
+  color: #fff;
+}
+.power.is-on::after {
+  background: var(--accent-a);
+}
+.power.is-on #power-sub {
+  color: rgb(255 255 255 / 0.9);
+}
+.power.pop {
+  animation: pop 0.34s cubic-bezier(0.3, 1.6, 0.6, 1);
+}
+.power:has(.switch:disabled) {
+  cursor: not-allowed;
+}
+@keyframes pop {
+  45% {
+    transform: scale(1.045) rotate(-1deg);
+  }
 }
 
 .hint {
-  margin: -6px 2px 0;
+  margin: -8px 4px 0;
   color: var(--muted);
   font-size: 12px;
 }
 
+/* Switches: inked track and knob, sliding with a little overshoot. */
 .switch {
   appearance: none;
-  width: 42px;
-  height: 24px;
+  flex: none;
+  width: 52px;
+  height: 30px;
+  margin: 0;
+  border: var(--line) solid var(--ink);
   border-radius: 999px;
-  background: var(--line);
+  background: var(--sunken);
   position: relative;
   cursor: pointer;
   transition: background 0.2s;
-  margin: 0;
 }
 .switch::after {
   content: '';
   position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 18px;
-  height: 18px;
+  top: 2px;
+  left: 2px;
+  width: 21px;
+  height: 21px;
+  border: var(--line) solid var(--ink);
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
-  transition: transform 0.2s cubic-bezier(0.3, 1.4, 0.6, 1);
+  transition: transform 0.24s cubic-bezier(0.3, 1.5, 0.6, 1);
 }
 .switch:checked {
   background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
 }
 .switch:checked::after {
-  transform: translateX(18px);
+  transform: translateX(22px);
+}
+.power.is-on .switch {
+  border-color: #fff;
+  background: rgb(255 255 255 / 0.3);
+}
+.power.is-on .switch::after {
+  border-color: #fff;
+}
+.switch.small {
+  width: 46px;
+  height: 27px;
+}
+.switch.small::after {
+  width: 18px;
+  height: 18px;
+}
+.switch.small:checked::after {
+  transform: translateX(19px);
 }
 .switch:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
-
-.key {
-  display: grid;
-  gap: 6px;
+.switch:focus-visible,
+.segmented input:focus-visible + span,
+input[type='range']:focus-visible,
+.key-field input:focus-visible,
+.key-field button:focus-visible {
+  outline: 2.5px dashed var(--accent-b);
+  outline-offset: 3px;
 }
-.key label {
+
+/* Settings: spacing separates the rows (no dividers). */
+.settings {
+  display: grid;
+  gap: 16px;
+}
+.setting {
+  display: grid;
+  gap: 8px;
+}
+.setting-head,
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.switch-row {
+  cursor: pointer;
+}
+.name {
+  font-weight: 700;
+  font-size: 15px;
+}
+.name small {
+  display: block;
+  font-weight: 500;
   font-size: 12px;
   color: var(--muted);
 }
+output {
+  font: 400 18px/1 'Bangers', system-ui, sans-serif;
+  letter-spacing: 0.5px;
+  color: var(--accent-b);
+}
+
+/* Language: three little panels; the chosen one tilts and pops. */
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.segmented label {
+  position: relative;
+  cursor: pointer;
+}
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.segmented span {
+  display: block;
+  padding: 7px 0 6px;
+  border: var(--line) solid var(--ink);
+  border-radius: 12px;
+  background: var(--panel);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 2px 2px 0 var(--pop);
+  transition: transform 0.15s cubic-bezier(0.3, 1.5, 0.6, 1), background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.segmented input:checked + span {
+  background: linear-gradient(100deg, var(--accent-a), var(--accent-b));
+  color: #fff;
+  box-shadow: 3px 3px 0 var(--pop);
+  transform: rotate(-3deg) scale(1.05);
+}
+.segmented label:active span {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--pop);
+}
+
+/* Opacity: an inked slider that fills with the gradient, plus a tiny bubble preview. */
+.opacity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+input[type='range'] {
+  --fill: 90%;
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+input[type='range']::-webkit-slider-runnable-track {
+  height: 14px;
+  border: var(--line) solid var(--ink);
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, var(--accent-a), var(--accent-b)) 0 0 / var(--fill) 100% no-repeat,
+    var(--sunken);
+  box-shadow: 2px 2px 0 var(--pop);
+}
+input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -6.5px;
+  border: var(--line) solid var(--ink);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 2px 2px 0 var(--pop);
+  transition: transform 0.12s;
+}
+input[type='range']:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+.preview {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 40px;
+  border-radius: 50%;
+  border: var(--line) solid var(--ink);
+  background: #fff;
+  box-shadow: 2px 2px 0 var(--pop);
+  overflow: hidden;
+}
+.preview > * {
+  grid-area: 1 / 1;
+}
+.preview-raw {
+  font-size: 11px;
+  color: #1d1a22;
+  writing-mode: vertical-rl;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+.preview-fill {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0.95;
+}
+.preview-text {
+  position: relative;
+  font: 700 14px/1 'Shantell Sans', 'Comic Sans MS', sans-serif;
+  color: #1d1a22;
+}
+
+/* API key */
+.key {
+  display: grid;
+  gap: 8px;
+}
+.key > label {
+  font-weight: 700;
+  font-size: 15px;
+}
 .key-field {
   display: flex;
-  gap: 8px;
+  gap: 10px;
 }
 .key-field input {
   flex: 1;
   min-width: 0;
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
+  padding: 8px 12px;
+  border: var(--line) solid var(--ink);
+  border-radius: 12px;
   background: var(--panel);
   color: var(--text);
-  font: inherit;
-}
-.key-field input:focus {
-  outline: 2px solid var(--accent-b);
-  outline-offset: 1px;
+  font: 500 13px/1.2 system-ui, sans-serif; /* the key itself stays in a plain, exact font */
+  box-shadow: inset 2px 2px 0 rgb(0 0 0 / 0.08);
 }
 .key-field button {
-  padding: 8px 14px;
-  border: 0;
-  border-radius: 10px;
-  background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+  padding: 8px 16px;
+  border-radius: 12px;
+  background: linear-gradient(100deg, var(--accent-a), var(--accent-b));
   color: #fff;
-  font: inherit;
-  font-weight: 600;
+  font: 400 19px/1 'Bangers', system-ui, sans-serif;
+  letter-spacing: 1px;
   cursor: pointer;
 }
 .saved {
+  justify-self: start;
   margin: 0;
-  font-size: 12px;
+  padding: 3px 10px 2px;
+  border: var(--line) solid var(--ink);
+  border-radius: 999px;
+  background: var(--panel);
+  font: 400 16px/1.1 'Bangers', system-ui, sans-serif;
+  letter-spacing: 0.8px;
   color: var(--accent-b);
+  box-shadow: 2px 2px 0 var(--pop);
+  transform: rotate(-3deg);
+  animation: pop 0.34s cubic-bezier(0.3, 1.6, 0.6, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
 }
