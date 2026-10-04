@@ -62,7 +62,9 @@ PRD ref: `prd.md > The Core Journey`.
   2. In Chrome, open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked**, and choose `.output/chrome-mv3`.
   3. Click the InkSwap icon, paste your key, and switch it on for a raw chapter.
 - **Demo recording (required):** open a raw chapter on MangaDex and/or Shonen Jump+ and switch InkSwap on with the right-click menu. Show the loading indicator, the translated page landing with the chime and toast, and a scroll to the next page. Then switch the language to Spanish to show the chapter retranslating. Show only a few pages of any official chapter.
+  - **Video:** https://youtu.be/qG8Plg_ScVc (public on YouTube, 1:43)
 - **Public GitHub repo (required):** the repo holds the code and a README with the "load unpacked" steps. Keys are never committed, and `.gitignore` already excludes `.env*` and the learner profile.
+  - **Repo:** https://github.com/vermilion4/ink-swap (public)
 - **Deployment:** none. Publishing to the Chrome Web Store is out of scope.
 
 ## Look and Feel
