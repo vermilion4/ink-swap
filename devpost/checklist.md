@@ -83,26 +83,27 @@ Build mode: fast
 
 - [x] Early usable behavior explored — after slice 2: you read a real translated page, and your prompt revisions and reactions shape the rest of the build
   Outcome: translations read naturally (tested on MangaDex, Shonen Jump+, and an Indonesian page). Placement was the problem; your feedback (vertical-letter wrapping, labels too big/off their bubbles, a bubble pushed off-screen) led to the one-to-one numbered-bubble approach, which you confirmed works on your Indonesian page.
-- [ ] Final kick-the-tires exploration and feedback completed
+- [x] Final kick-the-tires exploration and feedback completed
+  Outcome: the learner followed the README, read on MangaDex (incl. a Spanish long-strip chapter) and Shonen Jump+, and reported three bugs (switch-on in an already-open tab, a "skipped" page, a label on a face), all fixed and retried; then asked for saved translations, added as slice 7 and confirmed working.
 
 ## Final Review
 
 - [x] Fix: switching on in a tab that was open before InkSwap was installed/reloaded does nothing until a refresh. Cause: Chrome doesn't add page helpers to tabs already open at install/reload, and the "start" message failure was silently ignored. Fix: when nobody answers, the background worker adds the page helper to the tab (new `scripting` permission); a guard stops a second copy if one is already running. Verified: an extra copy added to a working tab → 1 overlay, 1 Claude call. Learner retried: fixed.
 - [x] Fix: pages "skipped" (page 4 left raw on a Spanish MangaDex chapter). Cause: not skipped — sent to Claude, which (told the source is "currently Japanese") sometimes returned nothing for Spanish pages: on the failing page, 3/3 runs returned no translation; with "the page can be in any language" added to the request, 3/3 translated all 16–17 lines. Leaving the tab was not the cause. Verified with `scripts/check-longstrip.mjs` (long strip, fit-width pages, Spanish → English, 20 s away from the tab): every page with text got labels (123 labels; was ~90 with pages 4 and 6 empty). Learner retried: fixed.
 - [x] Fix: a translation landed on a character's face. Cause: in long-strip mode a bubble can run off the top or bottom of its page image, and the bubble finder treated any white area touching an image edge as background, so those bubbles fell back to Claude's rough position. Fix: only areas touching two or more image edges count as background (new unit test for a bubble cut off by the top edge; 25/25 tests pass). Learner retried: fixed.
-- [ ] Final review complete — feedback resolved and learner confirms ready to ship
+- [x] Final review complete — feedback resolved and learner confirms ready to ship (2026-10-03)
 
 ## Code Tour and App Map
 
-- [ ] Learning activity complete — guided route, focused alternative, prior practice connected, or brief recap
-- [ ] Optional edit and transfer reflection addressed — offered/declined/already covered/not applicable as appropriate
-- [ ] `devpost/app-map.html` generated from finished code, checked, and shown, including a project-grounded practice to reuse
+- [x] Learning activity complete — guided route, focused alternative, prior practice connected, or brief recap
+- [x] Optional edit and transfer reflection addressed — offered/declined/already covered/not applicable as appropriate
+- [x] `devpost/app-map.html` generated from finished code, checked, and shown, including a project-grounded practice to reuse
 
-Activity and evidence:
-Route and stops:
-Edit outcome:
-Reflection:
-Activity mode:
+Activity and evidence: prior practice connected to the learner's prompting goal, using the final-review bug: the prompt's "currently Japanese" assumption made Claude return nothing on some Spanish pages (same page: 3/3 failed with the old request, 3/3 translated with one added sentence). Evidence: `lib/prompt.ts`, `lib/translate.ts` ("can be in any language"), `scripts/check-longstrip.mjs`. Builds on the slice 2 prompt drafting (structured sections, unreadable vs. skipped).
+Route and stops: not toured interactively; a 3-stop reference route is in the map (handlePage/capturePage → background translate/cache.lookup/findBubbles → translatePage/prompt/setBubbles).
+Edit outcome: not applicable (the related prompt edit, "currently Japanese" → any language, was suggested as the learner's own call, not as a wrap-up exercise).
+Reflection: offered and answered; the answer is recorded in the (git-ignored) learner profile.
+Activity mode: recap of practice that happened during the final review, plus the map. App map: `devpost/app-map.html` (snapshot of commit 6de7b47), checked offline with scripts disabled, light and dark.
 
 ## Revisions
 

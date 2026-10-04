@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InkSwap App Map</title>
+<style>
+  :root {
+    --bg: #f6f3f8; --panel: #ffffff; --text: #1d1a22; --muted: #615a6b; --ink: #1d1a22;
+    --pop: #1d1a22; --a: #c13fa8; --b: #9b5de5; --code: #ece6f0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f0d12; --panel: #221e29; --text: #efeaf3; --muted: #b3aabd; --ink: #efeaf3; --pop: #e055c4; --a: #e055c4; --b: #b183f0; --code: #18151d; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 system-ui, -apple-system, 'Segoe UI', sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 16px 56px; }
+  h1 { margin: 0 0 4px; font: 800 40px/1.1 system-ui, sans-serif; letter-spacing: -0.5px;
+       background: linear-gradient(100deg, var(--a), var(--b)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  h2 { margin: 40px 0 12px; font-size: 22px; }
+  p { max-width: 70ch; }
+  .lede { color: var(--muted); margin-top: 0; }
+  .panel { background: var(--panel); border: 2.5px solid var(--ink); border-radius: 18px; box-shadow: 4px 4px 0 var(--pop); padding: 18px 20px; }
+  .pieces { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+  .pieces li { padding: 14px 16px; }
+  .pieces strong { display: block; margin-bottom: 4px; }
+  code { font: 14px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--code); padding: 1px 6px; border-radius: 6px; overflow-wrap: anywhere; }
+  svg { width: 100%; height: auto; display: block; }
+  svg text { fill: var(--text); font: 600 13px system-ui, sans-serif; }
+  svg .small { font-weight: 500; font-size: 11.5px; fill: var(--muted); }
+  svg .box { fill: var(--panel); stroke: var(--ink); stroke-width: 2.5; }
+  svg .ext { fill: var(--panel); stroke: var(--b); stroke-width: 2.5; stroke-dasharray: 6 4; }
+  svg .arrow { stroke: var(--a); stroke-width: 2.5; fill: none; marker-end: url(#tip); }
+  svg #tip path { fill: var(--a); }
+  ol.route { padding-left: 0; list-style: none; counter-reset: stop; display: grid; gap: 14px; }
+  ol.route > li { counter-increment: stop; position: relative; padding-left: 56px; }
+  ol.route > li::before { content: counter(stop); position: absolute; left: 0; top: 2px; width: 38px; height: 38px; display: grid; place-items: center;
+    border: 2.5px solid var(--ink); border-radius: 50%; background: linear-gradient(135deg, var(--a), var(--b)); color: #fff; font-weight: 800; }
+  .where { color: var(--muted); font-size: 14px; margin: 2px 0 6px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 8px; }
+  tr + tr td { border-top: 1.5px solid color-mix(in srgb, var(--ink) 25%, transparent); }
+  th { font-size: 14px; color: var(--muted); }
+  details { margin-top: 10px; }
+  summary { cursor: pointer; font-weight: 600; }
+  summary:focus-visible, a:focus-visible { outline: 2.5px dashed var(--b); outline-offset: 3px; }
+  a { color: var(--a); }
+  .note { font-size: 14px; color: var(--muted); }
+  pre { margin: 8px 0 0; padding: 12px 14px; background: var(--code); border-radius: 10px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>InkSwap app map</h1>
+  <p class="lede">A Chrome extension that translates raw manga where you read it, bubble by bubble, by meaning. This map shows where things live, so you know where a change belongs.</p>
+
+  <h2>The main pieces</h2>
+  <ul class="pieces">
+    <li class="panel"><strong>Popup</strong>The on/off switch for the tab, language, bubble opacity, chime and toasts, saved translations, and your Claude key. <code>entrypoints/popup/</code></li>
+    <li class="panel"><strong>Page helper</strong>Runs on MangaDex and Shonen Jump+. Finds the manga pages, captures each one, and draws the translations over it. <code>entrypoints/content/index.ts</code></li>
+    <li class="panel"><strong>Background worker</strong>Remembers which tabs are on, finds the bubbles, checks saved translations, and calls Claude (at most 2 at once per tab). <code>entrypoints/background.ts</code></li>
+    <li class="panel"><strong>Claude + your prompt</strong>One call per page: reads the page and returns each bubble's translation. <code>lib/translate.ts</code>, <code>lib/prompt.ts</code></li>
+  </ul>
+
+  <h2>One action, end to end: a page comes into view</h2>
+  <div class="panel">
+    <svg viewBox="0 0 820 300" role="img" aria-labelledby="flow-title flow-desc">
+      <title id="flow-title">How a page gets translated</title>
+      <desc id="flow-desc">The page helper captures the page and sends it to the background worker. The worker finds the bubbles, checks saved translations, and if the page isn't saved asks Claude, then saves the result. The translated bubbles go back to the page helper, which draws them over the page.</desc>
+      <defs><marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z"/></marker></defs>
+      <rect class="box" x="10" y="20" width="230" height="110" rx="16"/>
+      <text x="26" y="50">Page helper</text>
+      <text class="small" x="26" y="72">finds the page as it scrolls</text>
+      <text class="small" x="26" y="90">into view, captures its picture</text>
+      <text class="small" x="26" y="112">handlePage · capturePage</text>
+
+      <rect class="box" x="300" y="20" width="230" height="110" rx="16"/>
+      <text x="316" y="50">Background worker</text>
+      <text class="small" x="316" y="72">finds and numbers the bubbles,</text>
+      <text class="small" x="316" y="90">checks saved translations</text>
+      <text class="small" x="316" y="112">translate · findBubbles · cache</text>
+
+      <rect class="ext" x="590" y="20" width="220" height="110" rx="16"/>
+      <text x="606" y="50">Claude (Sonnet 5.5)</text>
+      <text class="small" x="606" y="72">reads the page with your prompt,</text>
+      <text class="small" x="606" y="90">returns each bubble's translation</text>
+      <text class="small" x="606" y="112">translatePage · prompt</text>
+
+      <rect class="box" x="300" y="180" width="230" height="100" rx="16"/>
+      <text x="316" y="210">Saved translations</text>
+      <text class="small" x="316" y="232">a page already translated comes</text>
+      <text class="small" x="316" y="250">back here: no call, no cost</text>
+      <text class="small" x="316" y="268">chrome.storage.local</text>
+
+      <rect class="box" x="10" y="180" width="230" height="100" rx="16"/>
+      <text x="26" y="210">What you see</text>
+      <text class="small" x="26" y="232">each bubble painted over in its</text>
+      <text class="small" x="26" y="250">exact shape, text fitted inside</text>
+      <text class="small" x="26" y="268">setBubbles</text>
+
+      <path class="arrow" d="M240 75H296"/>
+      <path class="arrow" d="M530 62H586"/>
+      <path class="arrow" d="M590 100C560 100 556 100 534 100"/>
+      <path class="arrow" d="M415 130V176"/>
+      <path class="arrow" d="M300 230H244"/>
+    </svg>
+  </div>
+
+  <h2>A route through the code (reference)</h2>
+  <p class="note">Three stops that follow the action above. Open them in your editor and search for the anchor. Line numbers drift; anchors don't.</p>
+  <ol class="route">
+    <li class="panel">
+      <strong>The page comes into view and is captured</strong>
+      <p class="where"><code>entrypoints/content/index.ts</code> → search <code>async function handlePage</code>; capture in <code>lib/capture.ts</code> → <code>export async function capturePage</code></p>
+      This is where InkSwap notices a page, shows the spinner, takes the page's picture (read directly on MangaDex, a screenshot crop on Shonen Jump+), and sends it to the background worker. When the answer comes back, it shows the toast or the Retry pill.
+    </li>
+    <li class="panel">
+      <strong>The background worker decides: saved, or ask Claude?</strong>
+      <p class="where"><code>entrypoints/background.ts</code> → search <code>async function translate(</code> and <code>cache.lookup(fp, language)</code>; bubbles in <code>lib/bubbles.ts</code> → <code>export function findBubbles</code></p>
+      It finds the bubbles (closed white shapes with letters as holes), fingerprints the page, and returns a saved translation if there is one. Otherwise it sends Claude the page plus a numbered copy, then gives each line its bubble's exact shape and saves the result.
+    </li>
+    <li class="panel">
+      <strong>Claude translates with your prompt; the overlay draws it</strong>
+      <p class="where"><code>lib/translate.ts</code> → <code>export async function translatePage</code>; <code>lib/prompt.ts</code> → <code>export const prompt</code>; drawing in <code>lib/overlay.ts</code> → <code>async setBubbles</code></p>
+      The request is your prompt plus a short note the code writes about the two images and the target language. The JSON answer is checked, then each bubble is painted in its shape and its text shrunk until it fits.
+    </li>
+  </ol>
+
+  <h2>To change this, start here</h2>
+  <div class="panel">
+    <table>
+      <thead><tr><th scope="col">If you want to change…</th><th scope="col">Start here</th></tr></thead>
+      <tbody>
+        <tr><td>How translations read (tone, names, what to skip)</td><td><code>lib/prompt.ts</code> → <code>export const prompt</code>. Editing it makes saved pages translate fresh.</td></tr>
+        <tr><td>The model or how hard it thinks (cost vs. quality)</td><td><code>lib/translate.ts</code> → <code>export const MODEL</code>, <code>const EFFORT</code></td></tr>
+        <tr><td>How the bubble labels look</td><td><code>assets/overlay.css</code> → <code>.label {</code></td></tr>
+        <tr><td>The popup</td><td><code>entrypoints/popup/index.html</code>, <code>style.css</code>, <code>main.ts</code></td></tr>
+        <tr><td>Which sites InkSwap runs on</td><td><code>entrypoints/content/index.ts</code> → <code>matches</code>, and <code>wxt.config.ts</code> → <code>host_permissions</code></td></tr>
+        <tr><td>How many pages are saved</td><td><code>lib/cache.ts</code> → <code>export const MAX_PAGES</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>A practice to reuse</h2>
+  <div class="panel">
+    <p><strong>Test a prompt's assumptions with an input that breaks them.</strong> The translation prompt says the source text is "currently Japanese". That was true when it was written. In the final review a Spanish chapter came out with pages left blank. The cause wasn't a code bug: told the source was Japanese, Claude sometimes returned nothing for Spanish pages. On one page, the same request failed 3 out of 3 times; adding one sentence saying the page can be in any language translated every line, 3 out of 3.</p>
+    <p>Where it lives: <code>lib/prompt.ts</code> (the assumption), <code>lib/translate.ts</code> → <code>can be in any language</code> (the fix), <code>scripts/check-longstrip.mjs</code> (the check that now guards it).</p>
+    <p>On another project: when a prompt states something about its input (language, format, length, who's asking), try one real input that doesn't fit before trusting it, and compare a few runs of each version, since a single run can mislead.</p>
+  </div>
+
+  <h2>Run it again</h2>
+  <div class="panel">
+<pre><code>npm install
+npm run dev        # opens Chrome with InkSwap loaded; reloads as you edit
+npm test           # unit tests
+npm run build      # then load .output/chrome-mv3 via chrome://extensions → Load unpacked</code></pre>
+    <details>
+      <summary>About this map</summary>
+      <p class="note">A snapshot of the code at commit <code>6de7b47</code> ("Save translations so rereading is instant and free"). The code can drift after that; the search anchors above are the most reliable way to find each stop.</p>
+    </details>
+  </div>
+</main>
+</body>
+</html>
