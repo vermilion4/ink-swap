@@ -104,3 +104,7 @@ The first time, run `npx playwright install chromium` to download Playwright's b
 The manga page in the screenshot is from *ブラックジャックによろしく* / 佐藤秀峰 (*Give My Regards to Black Jack* / SHUHO SATO), used under the author's free secondary-use terms ([details and data](https://densho810.com/free/)).
 
 The fonts [Shantell Sans](https://fonts.google.com/specimen/Shantell+Sans) (bubble and popup text) and [Bangers](https://fonts.google.com/specimen/Bangers) (wordmark) are bundled under the SIL Open Font License. The licenses are in `public/fonts/`.
+
+## License
+
+The InkSwap code is released under the [MIT License](LICENSE). The bundled fonts and the screenshot's manga page keep their own terms, listed under Credits above.
