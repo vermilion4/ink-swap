@@ -8,11 +8,14 @@ Switch it on for a tab and each speech bubble is covered with a hand-lettered tr
 
 It's a proof of concept, built for the Devpost hackathon *Build With AI: Basics* and tested on [MangaDex](https://mangadex.org) and [Shonen Jump+](https://shonenjumpplus.com).
 
+
 ![A manga page shown twice. On the left its speech bubbles and narration box are in Japanese; on the right InkSwap has covered each one with an English translation in a hand-lettered font, fitted to its shape.](docs/translation-before-after.png)
 
 <sub>A real InkSwap run. Page from <i>ブラックジャックによろしく</i> (<i>Give My Regards to Black Jack</i>) by 佐藤秀峰 (Shuho Sato), which the author has made free for secondary use; taken from the <a href="https://densho810.com/free/">official free data</a>.</sub>
 
 ## What it does
+
+https://github.com/user-attachments/assets/fd47261f-dcc1-4e5c-8017-6bdd384b0c55
 
 - **Translates by meaning.** Each page goes to Claude (Sonnet 5.5), which keeps the speaker's tone, honorifics such as *-kun* and *-senpai*, and characters' names.
 - **Covers each bubble exactly.** InkSwap finds the bubbles on the page itself and numbers them, so Claude only has to say which line belongs in which bubble. Each translation is painted in that bubble's exact shape and sized to fit. Touching bubbles are split, so each line gets its own.
