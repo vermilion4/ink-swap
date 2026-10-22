@@ -11,3 +11,5 @@ shots/
 
 # Demo video recording (raw clips, browser profile)
 .demo/
+brag-output
+.DS_Store
