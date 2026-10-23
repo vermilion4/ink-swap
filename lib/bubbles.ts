@@ -114,6 +114,26 @@ function fillShape(label: Int32Array, width: number, id: number, x0: number, y0:
   return mask;
 }
 
+/** How much a found shape and Claude's box must overlap for the line to use that shape. */
+const MIN_BOX_OVERLAP = 0.35;
+
+/**
+ * Whether Claude's box for a line (image pixels) agrees with the found shape it named. Claude
+ * sometimes names a shape next to the real bubble (a white wall or sink beside a bubble the
+ * finder missed), and painting there leaves the real bubble untouched. The shape fits when
+ * enough of it lies inside the box, or enough of the box is covered by it: measured against the
+ * smaller of the two, so one bubble of two touching ones (sharing a shape) still fits.
+ */
+export function boxFitsRegion(r: Region, box: Rect): boolean {
+  const x0 = Math.max(Math.floor(box.x) - r.x, 0), x1 = Math.min(Math.ceil(box.x + box.w) - r.x, r.w);
+  const y0 = Math.max(Math.floor(box.y) - r.y, 0), y1 = Math.min(Math.ceil(box.y + box.h) - r.y, r.h);
+  let inside = 0, area = 0;
+  for (const m of r.mask) area += m;
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) inside += r.mask[y * r.w + x]!;
+  const smaller = Math.min(area, box.w * box.h);
+  return smaller > 0 && inside / smaller >= MIN_BOX_OVERLAP;
+}
+
 /**
  * Touching bubbles are found as one shape. When several lines of text sit in one shape,
  * split it: every cell goes to the line whose box it is closest to (`boxes` in image

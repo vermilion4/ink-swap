@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findBubbles, inscribedRect, splitRegion } from './bubbles';
+import { boxFitsRegion, findBubbles, inscribedRect, splitRegion } from './bubbles';
 import type { Gray } from './snap';
 
 /** A gray page; draw white ellipses (with a dark outline and dark "letters") onto it. */
@@ -119,5 +119,45 @@ describe('inscribedRect', () => {
 
   it('returns the whole box for a full mask', () => {
     expect(inscribedRect(new Uint8Array(400).fill(1), 20, 20, 2)).toEqual({ x: 0, y: 0, w: 20, h: 20 });
+  });
+});
+
+describe('boxFitsRegion', () => {
+  // A found shape: an ellipse filling a 100×60 box at (200, 100).
+  const ellipse = () => {
+    const img = page(400, 300);
+    bubble(img, 250, 130, 50, 30);
+    return findBubbles(img)[0]!;
+  };
+
+  it('accepts the box Claude gives for that bubble, a little loose or tight', () => {
+    const r = ellipse();
+    expect(boxFitsRegion(r, { x: 195, y: 95, w: 110, h: 70 })).toBe(true);
+    expect(boxFitsRegion(r, { x: 215, y: 110, w: 70, h: 40 })).toBe(true);
+  });
+
+  it('accepts each bubble of two touching ones that share a shape', () => {
+    // Two linked ellipses sharing one open inside, with one outline around both.
+    const W = 400, H = 300;
+    const img = page(W, H);
+    const d = (x: number, y: number) =>
+      Math.min(((x - 100) / 50) ** 2 + ((y - 100) / 40) ** 2, ((x - 180) / 50) ** 2 + ((y - 100) / 40) ** 2);
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++) img.data[y * W + x] = d(x, y) <= 1 ? 255 : d(x, y) <= 1.2 ? 0 : 120;
+    for (const cx of [100, 180]) for (let y = 85; y < 115; y += 5) for (let x = cx - 8; x < cx + 8; x++) img.data[y * W + x] = 0;
+    const found = findBubbles(img);
+    expect(found).toHaveLength(1);
+    expect(boxFitsRegion(found[0]!, { x: 50, y: 60, w: 100, h: 80 })).toBe(true);
+    expect(boxFitsRegion(found[0]!, { x: 130, y: 60, w: 100, h: 80 })).toBe(true);
+  });
+
+  it('rejects a shape that only grazes the box: the text is in a bubble next to it', () => {
+    // Claude numbered the wrong region: its box is a bubble beside this shape, overlapping its edge.
+    const r = ellipse();
+    expect(boxFitsRegion(r, { x: 285, y: 60, w: 120, h: 160 })).toBe(false);
+  });
+
+  it('rejects a shape that is nowhere near the box', () => {
+    expect(boxFitsRegion(ellipse(), { x: 10, y: 10, w: 60, h: 60 })).toBe(false);
   });
 });

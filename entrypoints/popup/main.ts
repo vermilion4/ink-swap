@@ -1,6 +1,6 @@
 import { browser } from 'wxt/browser';
 import type { Message } from '@/lib/messages';
-import { getApiKey, getPrefs, setApiKey, setPrefs, type Language, type TabState } from '@/lib/settings';
+import { getOwnApiKey, getPrefs, hasSharedKey, setApiKey, setPrefs, type Language, type TabState } from '@/lib/settings';
 
 const $ = <T extends Element>(sel: string) => document.querySelector<T>(sel)!;
 const power = $<HTMLLabelElement>('#power');
@@ -18,6 +18,7 @@ const keyInput = $<HTMLInputElement>('#key');
 const saveBtn = $<HTMLButtonElement>('#save');
 const saved = $<HTMLParagraphElement>('#saved');
 const savedCount = $<HTMLElement>('#saved-count');
+const sharedNote = $<HTMLParagraphElement>('#shared-note');
 const clearSaved = $<HTMLButtonElement>('#clear-saved');
 
 function renderSavedCount(count: number) {
@@ -58,12 +59,14 @@ function renderOpacity(value: number) {
 
 async function init() {
   const [key, prefs, [tab]] = await Promise.all([
-    getApiKey(),
+    getOwnApiKey(),
     getPrefs(),
     browser.tabs.query({ active: true, currentWindow: true }),
   ]);
-  hasKey = !!key;
+  // The field only ever shows the user's own key; a shared key stays out of sight.
+  hasKey = !!key || hasSharedKey;
   keyInput.value = key;
+  sharedNote.hidden = !hasSharedKey;
   tabId = tab?.id ?? null;
   onReaderSite = READER_SITES.some((site) => tab?.url?.startsWith(site));
 
@@ -114,7 +117,7 @@ clearSaved.addEventListener('click', async () => {
 
 saveBtn.addEventListener('click', async () => {
   await setApiKey(keyInput.value);
-  hasKey = !!keyInput.value.trim();
+  hasKey = !!keyInput.value.trim() || hasSharedKey;
   renderPower();
   saved.hidden = false;
   setTimeout(() => (saved.hidden = true), 1800);

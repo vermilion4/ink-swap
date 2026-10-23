@@ -4,6 +4,8 @@
 !.env.example
 
 # Dependencies and build output
+# submission/ can hold your API key (INKSWAP_SHARED_KEY=true): never commit it
+submission/
 node_modules/
 .output/
 .wxt/
@@ -11,5 +13,6 @@ shots/
 
 # Demo video recording (raw clips, browser profile)
 .demo/
+demo/
 brag-output
 .DS_Store

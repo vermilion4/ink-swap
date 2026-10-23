@@ -10,7 +10,13 @@
     "zip": "wxt zip",
     "compile": "tsc --noEmit",
     "test": "vitest run",
-    "postinstall": "wxt prepare"
+    "postinstall": "wxt prepare",
+    "demo:pages": "bash demo/fetch-pages.sh",
+    "demo:capture": "npm run build && node --env-file=.env demo/capture.mjs",
+    "demo:compose": "node demo/edit.mjs",
+    "demo:thumbs": "node demo/thumbs.mjs",
+    "demo:video": "npm run demo:capture && npm run demo:compose && npm run demo:thumbs",
+    "submission": "node scripts/make-submission.mjs"
   },
   "devDependencies": {
     "playwright": "^1.63.0",

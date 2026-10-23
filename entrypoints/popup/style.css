@@ -455,6 +455,13 @@ input[type='range']:active::-webkit-slider-thumb {
   letter-spacing: 1px;
   cursor: pointer;
 }
+.key-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .saved {
   justify-self: start;
   margin: 0;

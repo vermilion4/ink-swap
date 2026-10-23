@@ -37,9 +37,22 @@ export async function setPrefs(prefs: Partial<Prefs>): Promise<void> {
 const API_KEY = 'apiKey';
 const TAB_STATES = 'tabStates';
 
-export async function getApiKey(): Promise<string> {
+/** Replaced at build time (wxt.config.ts): the shared key, or '' when users bring their own. */
+declare const __INKSWAP_SHARED_KEY__: string;
+const SHARED_KEY = typeof __INKSWAP_SHARED_KEY__ === 'string' ? __INKSWAP_SHARED_KEY__ : '';
+
+/** True when this copy was built with a shared key (INKSWAP_SHARED_KEY=true). */
+export const hasSharedKey = SHARED_KEY !== '';
+
+/** The key the user saved in the popup ('' if none). */
+export async function getOwnApiKey(): Promise<string> {
   const res = await browser.storage.local.get(API_KEY);
   return (res[API_KEY] as string | undefined) ?? '';
+}
+
+/** The key to translate with: the user's own if they saved one, otherwise the shared key. */
+export async function getApiKey(): Promise<string> {
+  return (await getOwnApiKey()) || SHARED_KEY;
 }
 
 export async function setApiKey(key: string): Promise<void> {

@@ -1,6 +1,6 @@
 import { browser } from 'wxt/browser';
 import type { Celebrate, DataUrlResponse, Message, TranslateResponse } from '@/lib/messages';
-import { splitRegion } from '@/lib/bubbles';
+import { boxFitsRegion, splitRegion } from '@/lib/bubbles';
 import { createCache } from '@/lib/cache';
 import { pageFingerprint } from '@/lib/fingerprint';
 import { createLimiter } from '@/lib/limit';
@@ -243,17 +243,12 @@ async function playChime() {
 
 /**
  * Lines Claude put in a found bubble take that bubble's exact box and shape (several lines in
- * one bubble are joined). Lines outside any found bubble keep Claude's own box.
+ * one bubble are joined). Lines outside any found bubble keep Claude's own box, and so do lines
+ * whose named bubble doesn't match the box Claude gave (it named a shape next to the real one).
  */
 async function placeBubbles(read: ReadBubble[], found: PageBubbles): Promise<Bubble[]> {
   const placed: Bubble[] = [];
   const byRegion = new Map<number, ReadBubble[]>();
-  for (const b of read) {
-    if (b.bubble == null) {
-      if (!b.inTargetLanguage) placed.push({ box: b.box, source: b.source, translation: b.translation, readable: b.readable });
-    }
-    else byRegion.set(b.bubble, [...(byRegion.get(b.bubble) ?? []), b]);
-  }
   const { width, height } = found.gray;
   const toDetect = (b: ReadBubble) => ({
     x: (b.box.x / 1000) * width,
@@ -261,6 +256,12 @@ async function placeBubbles(read: ReadBubble[], found: PageBubbles): Promise<Bub
     w: (b.box.w / 1000) * width,
     h: (b.box.h / 1000) * height,
   });
+  for (const b of read) {
+    if (b.bubble == null || !boxFitsRegion(found.regions[b.bubble - 1]!, toDetect(b))) {
+      if (!b.inTargetLanguage) placed.push({ box: b.box, source: b.source, translation: b.translation, readable: b.readable });
+    }
+    else byRegion.set(b.bubble, [...(byRegion.get(b.bubble) ?? []), b]);
+  }
   for (const [n, lines] of byRegion) {
     // Several lines in one shape are usually touching bubbles: give each line its own part.
     const parts = splitRegion(found.regions[n - 1]!, lines.map(toDetect));

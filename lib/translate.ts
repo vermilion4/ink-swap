@@ -19,7 +19,7 @@ const TIMEOUT_MS = 60_000;
  * and REQUEST_VERSION (bump it when the request text or the JSON format changes). Saved pages
  * from another version don't count, so an improved prompt translates afresh.
  */
-const REQUEST_VERSION = 'r1';
+const REQUEST_VERSION = 'r2'; // r2: a line whose named bubble doesn't match its box is placed by its box
 export const TRANSLATION_VERSION = hashText(`${MODEL}|${REQUEST_VERSION}|${prompt('{language}')}`);
 
 function hashText(text: string): string {
