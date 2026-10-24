@@ -12,6 +12,13 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 for (const a of document.querySelectorAll('[data-store]')) a.href = STORE_URL;
 for (const a of document.querySelectorAll('[data-youtube]')) a.href = `https://youtu.be/${YOUTUBE_ID}`;
 
+// Links that leave the site open in a new tab. That also keeps them working when this page is
+// shown inside another site's frame (the Chrome Web Store, YouTube and GitHub refuse to be framed).
+for (const a of document.querySelectorAll('a[href^="http"]')) {
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+}
+
 // ---------- the toast, as InkSwap shows it ----------
 
 const toasts = document.querySelector('.toasts');
