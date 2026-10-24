@@ -15,7 +15,9 @@ export default defineConfig({
   manifest: {
     name: 'InkSwap',
     description: 'Translate raw manga in place, bubble by bubble, by meaning.',
-    permissions: ['storage', 'unlimitedStorage', 'contextMenus', 'activeTab', 'tabs', 'offscreen', 'scripting'],
+    // Only what the code uses: no "tabs" or "activeTab". <all_urls> already lets InkSwap read a tab's
+    // address and take screenshots (the Chrome Web Store rejects unused permissions).
+    permissions: ['storage', 'unlimitedStorage', 'contextMenus', 'offscreen', 'scripting'],
     host_permissions: [
       // Required by tabs.captureVisibleTab (screenshot fallback) without a fresh click on every chapter.
       '<all_urls>',
