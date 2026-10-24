@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>InkSwap: raw manga, translated as you read</title>
+  <meta name="description" content="InkSwap is a Chrome extension that re-letters every speech bubble of a raw manga chapter in your language, right on the page. Works on MangaDex and Shonen Jump+.">
+  <meta property="og:title" content="InkSwap: raw manga, translated as you read">
+  <meta property="og:description" content="Every speech bubble re-lettered in English, Spanish or French, right on the page. Works on MangaDex and Shonen Jump+.">
+  <meta property="og:image" content="https://inkswap.netlify.app/assets/social.jpg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#1b1424">
+  <link rel="icon" type="image/png" href="assets/favicon-32.png">
+  <link rel="preload" href="assets/fonts/bangers-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/shantell-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <!-- The header works like InkSwap's popup: a power switch for this page, plus the install button. -->
+  <header class="bar">
+    <a class="brand" href="#top" aria-label="InkSwap, back to top">
+      <img src="assets/icon-dark.svg" alt="" width="34" height="34">
+      <span class="wordmark">InkSwap</span>
+    </a>
+    <label class="power" title="InkSwap translates this page's headings as you scroll">
+      <span class="power-text"><strong id="power-title">Translating this page</strong></span>
+      <input id="power" type="checkbox" role="switch" class="switch" checked aria-describedby="power-hint">
+      <span id="power-hint" class="visually-hidden">Switch off to see this page's headings in Japanese.</span>
+    </label>
+    <a class="btn btn-ink btn-small" data-store href="#">Add to Chrome</a>
+  </header>
+
+  <!-- InkSwap's toast, for the "Page translated" moment. -->
+  <div class="toasts" aria-live="polite"></div>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <video class="hero-video" autoplay muted loop playsinline preload="auto" poster="assets/hero-poster.jpg" aria-hidden="true">
+        <source src="assets/hero.mp4" type="video/mp4">
+      </video>
+      <div class="hero-shade" aria-hidden="true"></div>
+      <div class="hero-inner">
+        <div class="bubble bubble-hero">
+          <h1 class="swap" data-ja="日本語のマンガを、読みながら翻訳。">Raw manga, translated as you read.</h1>
+        </div>
+        <p class="lede">InkSwap is a Chrome extension that re-letters every speech bubble in your language, right on the page, by meaning instead of word for word.</p>
+        <div class="ctas">
+          <a class="btn btn-gradient" data-store href="#">Add to Chrome, it's free</a>
+          <button class="btn btn-paper" type="button" data-demo>Watch the demo <span class="dim">1:49</span></button>
+        </div>
+        <p class="works">Works on <b>MangaDex</b> and <b>Shonen Jump+</b></p>
+      </div>
+    </section>
+
+    <!-- How one page gets swapped: a real page from the demo session, step by step. -->
+    <section class="how" id="how">
+      <div class="wrap">
+        <h2 class="swap section-title" data-ja="1ページが訳されるまで">How a page gets swapped</h2>
+        <p class="section-lede">Recorded from a real run on a real page. Scroll to watch it happen. (This website itself doesn't call Claude.)</p>
+      </div>
+      <div class="wrap how-grid">
+        <figure class="how-figure" data-step="1" aria-label="The page at each step">
+          <div class="page-stack">
+            <img class="layer raw" src="assets/page-raw.jpg" alt="A manga page with Japanese speech bubbles." width="900" height="1273">
+            <img class="layer marked" src="assets/page-marked-page.jpg" alt="The same page with every closed white shape shaded in colour and numbered." width="900" height="1273" loading="lazy">
+            <img class="layer after" src="assets/page-after.jpg" alt="The same page with every speech bubble re-lettered in English." width="900" height="1273" loading="lazy">
+            <span class="spinner" aria-hidden="true"></span>
+            <span class="wipe-edge" aria-hidden="true"></span>
+          </div>
+          <figcaption class="credit">ブラックジャックによろしく · 佐藤秀峰 (<i>Give My Regards to Black Jack</i>, Shuho Sato)</figcaption>
+        </figure>
+        <ol class="steps">
+          <li class="step" data-step="1">
+            <h3>It sees the page you're on</h3>
+            <p>InkSwap reads the page's image as it scrolls into view. When a site won't share the image, it takes a screenshot of what's on screen instead.</p>
+          </li>
+          <li class="step" data-step="2">
+            <h3>It finds the bubbles and numbers them</h3>
+            <p>Right on the page, it looks for closed white shapes with letters inside, then shades and numbers each one, so Claude knows exactly where every line belongs.</p>
+          </li>
+          <li class="step" data-step="3">
+            <h3>Claude translates the whole page in one go</h3>
+            <p>Claude reads the page and says which line goes in which numbered shape. InkSwap checks each answer against where Claude saw the bubble before using it.</p>
+          </li>
+          <li class="step" data-step="4">
+            <h3>Every line is lettered into its bubble</h3>
+            <p>Each translation is painted in its bubble's exact shape and sized to fit, in a hand-lettered font. About 5 to 10 seconds for the whole page.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- The same page in three languages, switched like the popup's language picker. -->
+    <section class="langs" id="languages">
+      <div class="wrap langs-grid">
+        <div class="langs-copy">
+          <h2 class="swap section-title" data-ja="英語でも、スペイン語でも、フランス語でも。">English, Spanish or French.</h2>
+          <p>Pick a language in the popup and the chapter you're reading is translated again. Switch back and it's instant, because the earlier translation was saved.</p>
+          <div class="segmented" role="radiogroup" aria-label="Language">
+            <label><input type="radio" name="lang" value="en" checked><span>English</span></label>
+            <label><input type="radio" name="lang" value="es"><span>Español</span></label>
+            <label><input type="radio" name="lang" value="fr"><span>Français</span></label>
+          </div>
+          <p class="note">Names and honorifics like <i>-kun</i> and <i>-senpai</i> stay as they are, and so does each speaker's tone.</p>
+        </div>
+        <figure class="langs-figure">
+          <div class="page-frame" data-busy="false">
+            <img id="lang-page" src="assets/lang-en.jpg" alt="A manga page with its bubbles in English." width="820" height="1160" loading="lazy">
+            <span class="spinner" aria-hidden="true"></span>
+          </div>
+          <figcaption class="credit">ブラックジャックによろしく · 佐藤秀峰</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- The two sites it supports. -->
+    <section class="sites" id="sites">
+      <div class="wrap">
+        <h2 class="swap section-title" data-ja="いつものサイトで、そのまま。">Right where you already read.</h2>
+        <p class="section-lede">InkSwap is built and tested for two sites.</p>
+        <div class="site-cards">
+          <article class="site-card">
+            <h3>MangaDex</h3>
+            <p>Single-page or long-strip reading. Pages translate as they come into view, a page ahead where it can, and it carries on into the next chapter without being switched on again.</p>
+            <p class="site-url">mangadex.org</p>
+          </article>
+          <article class="site-card">
+            <h3>Shonen Jump+</h3>
+            <p>Two-page spreads, read right to left; turn pages with the ← key. The site protects its images, so InkSwap translates what's on screen as you reach it.</p>
+            <p class="site-url">shonenjumpplus.com</p>
+          </article>
+        </div>
+        <p class="disclaimer">InkSwap isn't affiliated with MangaDex or Shonen Jump+.</p>
+      </div>
+    </section>
+
+    <!-- The small things, laid out like a manga page: panels of different sizes. -->
+    <section class="details" id="details">
+      <div class="wrap">
+        <h2 class="swap section-title" data-ja="細かいところも、ちゃんと。">The small stuff, done right.</h2>
+        <div class="panels">
+          <article class="panel panel-tall">
+            <img src="assets/detail-sfx.jpg" alt="Close-up: two bubbles translated into English while the ゴシ sound effects beside them stay in Japanese." width="560" height="470" loading="lazy">
+            <h3>Sound effects stay as drawn</h3>
+            <p>So do bubbles already in your language, and anything too blurry to read with confidence.</p>
+          </article>
+          <article class="panel">
+            <h3>Rereading is free</h3>
+            <p>Translations are saved in your browser, so pages you've read come back instantly, even after a restart. Only the translations are kept, never the pages.</p>
+          </article>
+          <article class="panel">
+            <h3>Peek at the original</h3>
+            <p>Turn down bubble opacity in the popup and the Japanese shows through underneath.</p>
+          </article>
+          <article class="panel panel-wide">
+            <h3>Touching bubbles get split</h3>
+            <p>Two bubbles drawn as one shape each get their own line, so nobody's dialogue runs into anyone else's.</p>
+          </article>
+          <article class="panel">
+            <h3>It tells you when it's done</h3>
+            <p>A soft chime and a "Page translated" toast, and one "Chapter translated" for each new chapter. Both can be turned off.</p>
+          </article>
+          <article class="panel">
+            <h3>Nothing lost on a bad page</h3>
+            <p>If a page fails, it stays as it was, with a Retry button on it.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Getting started: a real sequence, so numbered. -->
+    <section class="setup" id="setup">
+      <div class="wrap">
+        <h2 class="swap section-title" data-ja="1分ではじめよう。">Up and running in a minute.</h2>
+        <ol class="setup-steps">
+          <li>
+            <h3>Add InkSwap to Chrome</h3>
+            <p>It's free on the Chrome Web Store.</p>
+            <a class="btn btn-gradient" data-store href="#">Add to Chrome</a>
+          </li>
+          <li>
+            <h3>Paste your Claude API key</h3>
+            <p>Create one at <a href="https://console.anthropic.com/settings/keys" rel="noreferrer">console.anthropic.com</a>. It's stored only in your browser. You pay Anthropic directly, about 1 to 3¢ a page in testing.</p>
+            <img class="popup-shot" src="assets/popup-welcome.png" alt="InkSwap's popup asking for a Claude API key, with steps to get one." width="640" height="794" loading="lazy">
+          </li>
+          <li>
+            <h3>Open a chapter and switch it on</h3>
+            <p>On MangaDex or Shonen Jump+, click the InkSwap icon and flip the switch, or right-click the page and choose Translate this page.</p>
+            <img class="popup-shot" src="assets/popup-ready.png" alt="InkSwap's popup with its switch, language choice and settings." width="640" height="1086" loading="lazy">
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="finale">
+      <div class="wrap finale-inner">
+        <div class="bubble bubble-finale">
+          <h2 class="swap" data-ja="次の話が、待っている。">Your next chapter is waiting.</h2>
+        </div>
+        <div class="ctas">
+          <a class="btn btn-gradient" data-store href="#">Add to Chrome</a>
+          <button class="btn btn-paper" type="button" data-demo>Watch the demo</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot-inner">
+      <div class="foot-brand">
+        <img src="assets/icon-dark.svg" alt="" width="40" height="40">
+        <span class="wordmark">InkSwap</span>
+      </div>
+      <nav class="foot-links" aria-label="More">
+        <a data-store href="#">Chrome Web Store</a>
+        <a data-youtube href="#">Demo on YouTube</a>
+        <a href="https://github.com/vermilion4/ink-swap">Source on GitHub</a>
+        <a href="https://github.com/vermilion4/ink-swap/blob/main/PRIVACY.md">Privacy</a>
+      </nav>
+      <p class="foot-credits">
+        Manga pages on this site: ブラックジャックによろしく by 佐藤秀峰 (<i>Give My Regards to Black Jack</i>, Shuho Sato), from the author's <a href="https://densho810.com/free/" rel="noreferrer">free-to-use data</a>. The manga in the video at the top is original art made for it.
+        Fonts: Bangers and Shantell Sans, under the SIL Open Font License.
+      </p>
+    </div>
+  </footer>
+
+  <!-- The demo video, opened by "Watch the demo". The player loads only when it's opened. -->
+  <dialog class="demo" aria-label="InkSwap demo video">
+    <form method="dialog"><button class="demo-close" aria-label="Close the video">Close</button></form>
+    <div class="demo-frame"></div>
+  </dialog>
+
+  <script src="main.js" defer></script>
+</body>
+</html>

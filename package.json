@@ -16,7 +16,8 @@
     "demo:compose": "node demo/edit.mjs",
     "demo:thumbs": "node demo/thumbs.mjs",
     "demo:video": "npm run demo:capture && npm run demo:compose && npm run demo:thumbs",
-    "submission": "node scripts/make-submission.mjs"
+    "submission": "node scripts/make-submission.mjs",
+    "site": "python3 -m http.server 4173 -d site"
   },
   "devDependencies": {
     "playwright": "^1.63.0",
