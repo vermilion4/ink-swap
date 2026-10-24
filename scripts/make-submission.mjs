@@ -37,12 +37,13 @@ fs.cpSync(BUILT, path.join(DIR, 'extension'), { recursive: true });
 
 const keySection = shared
   ? `This copy already includes a Claude API key for judging, so there's nothing to set up.
-If you'd rather use your own key, paste it in the InkSwap popup and click Save; it replaces
-the included one in your browser.`
+If you'd rather use your own key: open the InkSwap popup, click Edit on the "Demo key"
+chip at the top, paste your key and click Save. It replaces the included one in your browser.`
   : `InkSwap uses your own Claude API key, and you pay Anthropic for what you translate (about
 1–3 cents a page in testing).
 1. Create a key at https://console.anthropic.com
-2. Click the InkSwap icon in the toolbar, paste the key and click Save.
+2. Click the InkSwap icon in the toolbar. The first thing it asks for is your key:
+   paste it and click Save.
 The key is stored only in your browser.`;
 
 fs.writeFileSync(

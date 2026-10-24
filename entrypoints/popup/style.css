@@ -184,11 +184,6 @@ main {
   }
 }
 
-.hint {
-  margin: -8px 4px 0;
-  color: var(--muted);
-  font-size: 12px;
-}
 
 /* Switches: inked track and knob, sliding with a little overshoot. */
 .switch {
@@ -248,7 +243,10 @@ main {
 .segmented input:focus-visible + span,
 input[type='range']:focus-visible,
 .key-field input:focus-visible,
-.key-field button:focus-visible {
+.key-field button:focus-visible,
+.key-chip button:focus-visible,
+.key-cancel:focus-visible,
+.key-panel a:focus-visible {
   outline: 2.5px dashed var(--accent-b);
   outline-offset: 3px;
 }
@@ -422,18 +420,119 @@ input[type='range']:active::-webkit-slider-thumb {
   transform: none;
 }
 
-/* API key */
-.key {
+/* The main controls, spaced like the rest of the popup. */
+.app {
   display: grid;
-  gap: 8px;
+  gap: 18px;
 }
-.key > label {
+
+/* API key, once saved: a small inked chip in the header, beside the wordmark. */
+.key-chip {
+  position: absolute;
+  top: 19px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px 3px 9px;
+  border: var(--line) solid var(--ink);
+  border-radius: 999px;
+  background: var(--panel);
+  box-shadow: 2px 2px 0 var(--pop);
+  font-size: 12px;
   font-weight: 700;
-  font-size: 15px;
+}
+.key-chip[hidden] {
+  display: none;
+}
+.key-chip .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2fb26b;
+}
+.key-chip button {
+  padding: 3px 8px 2px;
+  border-radius: 999px;
+  background: linear-gradient(100deg, var(--accent-a), var(--accent-b));
+  color: #fff;
+  font: 400 13px/1 'Bangers', system-ui, sans-serif;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+}
+.key-chip.pop {
+  animation: pop 0.34s cubic-bezier(0.3, 1.6, 0.6, 1);
+}
+
+/* API key panel: the whole popup on first run ("welcome"), or opened under the header by Edit. */
+.key-panel {
+  display: grid;
+  gap: 10px;
+  padding: 16px 16px 18px;
+  border: var(--line) solid var(--ink);
+  border-radius: 22px;
+  background: var(--panel);
+  box-shadow: 4px 4px 0 var(--pop);
+}
+.key-panel[hidden] {
+  display: none;
+}
+.key-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.key-panel h2 {
+  margin: 0;
+  font: 400 24px/1 'Bangers', system-ui, sans-serif;
+  letter-spacing: 0.6px;
+}
+.key-panel p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.key-panel a {
+  color: var(--accent-b);
+  font-weight: 700;
+  text-decoration: none;
+}
+.key-panel a:hover {
+  text-decoration: underline;
+}
+.steps {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.key-cancel,
+.key-remove {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.key-cancel {
+  font: 400 16px/1 'Bangers', system-ui, sans-serif;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+}
+.key-remove {
+  font: inherit;
+  font-weight: 700;
+  color: var(--accent-b);
+}
+.key-panel[data-mode='welcome'] .key-cancel,
+.key-panel[data-mode='edit'] .welcome-only {
+  display: none;
 }
 .key-field {
   display: flex;
   gap: 10px;
+  margin: 0;
 }
 .key-field input {
   flex: 1;
@@ -455,26 +554,21 @@ input[type='range']:active::-webkit-slider-thumb {
   letter-spacing: 1px;
   cursor: pointer;
 }
-.key-note {
-  margin: 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.35;
+.key-panel.shake {
+  animation: shake 0.3s ease;
+}
+@keyframes shake {
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
 }
 
-.saved {
-  justify-self: start;
-  margin: 0;
-  padding: 3px 10px 2px;
-  border: var(--line) solid var(--ink);
-  border-radius: 999px;
-  background: var(--panel);
-  font: 400 16px/1.1 'Bangers', system-ui, sans-serif;
-  letter-spacing: 0.8px;
-  color: var(--accent-b);
-  box-shadow: 2px 2px 0 var(--pop);
-  transform: rotate(-3deg);
-  animation: pop 0.34s cubic-bezier(0.3, 1.6, 0.6, 1);
+/* No key yet: the welcome is the whole popup. */
+body.needs-key .app {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

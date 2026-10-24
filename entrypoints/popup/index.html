@@ -10,65 +10,83 @@
     <main>
       <h1 class="wordmark">InkSwap</h1>
 
-      <!-- The main control, drawn as a speech bubble: on/off for the current tab. -->
-      <label class="power" id="power">
-        <span class="power-text">
-          <strong id="power-title">Off for this tab</strong>
-          <span id="power-sub">Switch on to translate this chapter</span>
-        </span>
-        <input id="on" type="checkbox" role="switch" class="switch" disabled />
-      </label>
-      <p id="hint" class="hint">Paste your Claude API key to start.</p>
+      <!-- Once a key is saved: a small chip in the header, with Edit. -->
+      <div class="key-chip" id="key-chip" hidden>
+        <span class="dot" aria-hidden="true"></span>
+        <span id="key-chip-label">Key</span>
+        <button id="key-edit" type="button" class="inked">Edit</button>
+      </div>
 
-      <section class="settings" aria-label="Settings">
-        <div class="setting">
-          <span class="name" id="language-label">Language</span>
-          <div class="segmented" role="radiogroup" aria-labelledby="language-label">
-            <label><input type="radio" name="language" value="en" /><span>English</span></label>
-            <label><input type="radio" name="language" value="es" /><span>Español</span></label>
-            <label><input type="radio" name="language" value="fr" /><span>Français</span></label>
-          </div>
+      <!-- The Claude API key. With no key it's all the popup shows (a welcome); later, Edit opens it
+           under the header. data-mode is "welcome" or "edit". -->
+      <section class="key-panel" id="key-panel" data-mode="welcome" hidden>
+        <div class="key-head">
+          <h2 id="key-title">First, your Claude key</h2>
+          <button id="key-cancel" type="button" class="key-cancel">Cancel</button>
         </div>
-
-        <div class="setting">
-          <div class="setting-head">
-            <label class="name" for="opacity">Bubble opacity</label>
-            <output id="opacity-value" for="opacity">95%</output>
-          </div>
-          <div class="opacity">
-            <input id="opacity" type="range" min="0.5" max="1" step="0.05" value="0.95" />
-            <!-- A tiny bubble showing what this opacity looks like over the original text. -->
-            <span class="preview" aria-hidden="true">
-              <span class="preview-raw">こんにちは</span>
-              <span class="preview-fill" id="preview-fill"></span>
-              <span class="preview-text">Hi!</span>
-            </span>
-          </div>
-        </div>
-
-        <label class="setting switch-row">
-          <span class="name">Chime <small>On the first translated page</small></span>
-          <input id="chime" type="checkbox" role="switch" class="switch small" />
-        </label>
-        <label class="setting switch-row">
-          <span class="name">Toasts <small>When a page or chapter is translated</small></span>
-          <input id="toasts" type="checkbox" role="switch" class="switch small" />
-        </label>
-        <div class="setting switch-row saved-row">
-          <span class="name">Saved translations <small id="saved-count">Pages you've translated come back free</small></span>
-          <button id="clear-saved" type="button" class="inked clear">Clear</button>
-        </div>
+        <p class="welcome-only">InkSwap translates with Claude, using your own API key. Paste it once and you're set.</p>
+        <form class="key-field" id="key-form">
+          <input id="key" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" aria-labelledby="key-title" />
+          <button id="save" type="submit" class="inked">Save</button>
+        </form>
+        <ol class="welcome-only steps">
+          <li>Open <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer">console.anthropic.com</a> ↗</li>
+          <li>Create a key and copy it</li>
+          <li>Paste it here and click Save</li>
+        </ol>
+        <p class="key-note" id="key-note"></p>
       </section>
 
-      <section class="key">
-        <label for="key">Claude API key</label>
-        <div class="key-field">
-          <input id="key" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" />
-          <button id="save" type="button" class="inked">Save</button>
-        </div>
-        <p id="saved" class="saved" hidden>Saved ✓</p>
-        <p id="shared-note" class="key-note" hidden>This copy comes with a key, so you can start right away. Paste your own to use it instead.</p>
-      </section>
+      <div class="app" id="app">
+        <!-- The main control, drawn as a speech bubble: on/off for the current tab. -->
+        <label class="power" id="power">
+          <span class="power-text">
+            <strong id="power-title">Off for this tab</strong>
+            <span id="power-sub">Switch on to translate this chapter</span>
+          </span>
+          <input id="on" type="checkbox" role="switch" class="switch" disabled />
+        </label>
+
+        <section class="settings" aria-label="Settings">
+          <div class="setting">
+            <span class="name" id="language-label">Language</span>
+            <div class="segmented" role="radiogroup" aria-labelledby="language-label">
+              <label><input type="radio" name="language" value="en" /><span>English</span></label>
+              <label><input type="radio" name="language" value="es" /><span>Español</span></label>
+              <label><input type="radio" name="language" value="fr" /><span>Français</span></label>
+            </div>
+          </div>
+
+          <div class="setting">
+            <div class="setting-head">
+              <label class="name" for="opacity">Bubble opacity</label>
+              <output id="opacity-value" for="opacity">95%</output>
+            </div>
+            <div class="opacity">
+              <input id="opacity" type="range" min="0.5" max="1" step="0.05" value="0.95" />
+              <!-- A tiny bubble showing what this opacity looks like over the original text. -->
+              <span class="preview" aria-hidden="true">
+                <span class="preview-raw">こんにちは</span>
+                <span class="preview-fill" id="preview-fill"></span>
+                <span class="preview-text">Hi!</span>
+              </span>
+            </div>
+          </div>
+
+          <label class="setting switch-row">
+            <span class="name">Chime <small>On the first translated page</small></span>
+            <input id="chime" type="checkbox" role="switch" class="switch small" />
+          </label>
+          <label class="setting switch-row">
+            <span class="name">Toasts <small>When a page or chapter is translated</small></span>
+            <input id="toasts" type="checkbox" role="switch" class="switch small" />
+          </label>
+          <div class="setting switch-row saved-row">
+            <span class="name">Saved translations <small id="saved-count">Pages you've translated come back free</small></span>
+            <button id="clear-saved" type="button" class="inked clear">Clear</button>
+          </div>
+        </section>
+      </div>
     </main>
     <script type="module" src="./main.ts"></script>
   </body>

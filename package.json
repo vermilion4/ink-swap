@@ -2,7 +2,7 @@
   "name": "inkswap",
   "description": "Translate raw manga in place, bubble by bubble, by meaning.",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "scripts": {
     "dev": "wxt",
